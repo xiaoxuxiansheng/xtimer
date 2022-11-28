@@ -1,0 +1,36 @@
+executor:
+  workersNum: 2
+scheduler:
+  workersNum: 2
+  bucketsNum: 2
+trigger:
+  workersNum: 2
+  zrangeGapSeconds: 1
+webserver:
+  port: 8092
+  bucketsNum: 2
+  migrateTimeStepSeconds: 3600
+mysql:
+  dsn: root:19951212@tcp(43.138.61.23:3306)/ftimer?charset=utf8&parseTime=True&loc=Local
+pool:
+  size: 5000
+  expireSeconds: 10 
+redis:
+  network: tcp 
+  address: 43.138.61.23:6379
+  password: 19951212
+  maxIdle: 10
+  idleTimeout: 10
+  maxActive: 5000
+  wait: true
+slice:
+  bucketsNum: 2
+migrator:
+  workersNum: 2
+  migrateStepMinutes: 60
+  migrateTryLockMinutes: 20
+  migrateSuccessExpireMinutes: 120
+lock:
+  tryLockSeconds: 20
+  tryLockGapSeconds: 1
+  successExpireSeconds: 120

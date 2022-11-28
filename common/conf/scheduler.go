@@ -1,24 +1,24 @@
 package conf
 
-type WorkerAppConf struct {
+type SchedulerAppConf struct {
 	WorkersNum int `yaml:"workersNum"`
 	BucketsNum int `yaml:"bucketsNum"`
 }
 
-var defaultWorkerAppConfProvider *WorkerAppConfProvider
+var defaultSchedulerAppConfProvider *SchedulerAppConfProvider
 
-type WorkerAppConfProvider struct {
-	conf *WorkerAppConf
+type SchedulerAppConfProvider struct {
+	conf *SchedulerAppConf
 }
 
-func NewWorkerAppConfProvider(conf *WorkerAppConf) *WorkerAppConfProvider {
-	return &WorkerAppConfProvider{conf: conf}
+func NewSchedulerAppConfProvider(conf *SchedulerAppConf) *SchedulerAppConfProvider {
+	return &SchedulerAppConfProvider{conf: conf}
 }
 
-func (w *WorkerAppConfProvider) Get() *WorkerAppConf {
-	return w.conf
+func (s *SchedulerAppConfProvider) Get() *SchedulerAppConf {
+	return s.conf
 }
 
-func DefaultWorkerAppConfProvider() *WorkerAppConfProvider {
-	return defaultWorkerAppConfProvider
+func DefaultSchedulerAppConfProvider() *SchedulerAppConfProvider {
+	return defaultSchedulerAppConfProvider
 }

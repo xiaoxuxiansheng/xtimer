@@ -18,3 +18,9 @@ func NewMysqlConfProvider(conf *MySQLConfig) *MysqlConfProvider {
 func (m *MysqlConfProvider) Get() *MySQLConfig {
 	return m.conf
 }
+
+var defaultMysqlConfProvider *MysqlConfProvider
+
+func DefaultMysqlConfProvider() *MysqlConfProvider {
+	return defaultMysqlConfProvider
+}

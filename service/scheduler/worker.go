@@ -24,7 +24,7 @@ type Worker struct {
 	stop             func()
 }
 
-func NewWorker(trigger *trigger.Worker, lockService *redis.Client, appConfProvider *conf.WorkerAppConfProvider, lockConfProvider *conf.LockConfProvider, pool *pool.GoWorkerPool) *Worker {
+func NewWorker(trigger *trigger.Worker, lockService *redis.Client, appConfProvider *conf.SchedulerAppConfProvider, lockConfProvider *conf.LockConfProvider, pool *pool.GoWorkerPool) *Worker {
 	return &Worker{
 		trigger:          trigger,
 		lockService:      lockService,
@@ -95,7 +95,7 @@ func (w *Worker) produceSlice(ctx context.Context, key string) error {
 }
 
 type appConfProvider interface {
-	Get() *conf.WorkerAppConf
+	Get() *conf.SchedulerAppConf
 }
 
 type lockService interface {

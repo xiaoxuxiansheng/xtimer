@@ -18,3 +18,9 @@ func NewWorkerPoolConfProvider(conf *WorkerPoolConf) *WorkerPoolConfProvider {
 func (w *WorkerPoolConfProvider) Get() *WorkerPoolConf {
 	return w.conf
 }
+
+var defaultWorkerPoolConfProvider *WorkerPoolConfProvider
+
+func DefaultWorkerPoolConfProvider() *WorkerPoolConfProvider {
+	return defaultWorkerPoolConfProvider
+}

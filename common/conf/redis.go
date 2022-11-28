@@ -26,3 +26,9 @@ func NewRedisConfigProvider(conf *RedisConfig) *RedisConfigProvider {
 func (r *RedisConfigProvider) Get() *RedisConfig {
 	return r.conf
 }
+
+var defaultRedisConfProvider *RedisConfigProvider
+
+func DefaultRedisConfigProvider() *RedisConfigProvider {
+	return defaultRedisConfProvider
+}

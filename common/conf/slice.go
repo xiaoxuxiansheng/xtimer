@@ -15,3 +15,9 @@ func NewSliceConfProvider(conf *SliceConf) *SliceConfProvider {
 func (s *SliceConfProvider) Get() *SliceConf {
 	return s.conf
 }
+
+var defaultSliceConfigProvider *SliceConfProvider
+
+func DefaultSliceConfigProvider() *SliceConfProvider {
+	return defaultSliceConfigProvider
+}

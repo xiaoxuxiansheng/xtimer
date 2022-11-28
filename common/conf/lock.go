@@ -20,3 +20,9 @@ func NewLockConfProvider(conf *LockConfig) *LockConfProvider {
 func (l *LockConfProvider) Get() *LockConfig {
 	return l.conf
 }
+
+var defaultLockConfProvider *LockConfProvider
+
+func DefaultLockConfProvider() *LockConfProvider {
+	return defaultLockConfProvider
+}

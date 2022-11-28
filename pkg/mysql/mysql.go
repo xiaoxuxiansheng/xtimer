@@ -19,8 +19,8 @@ type Client struct {
 }
 
 // GetClient 获取一个数据库客户端
-func GetClient(conf *conf.MySQLConfig) (*Client, error) {
-	db, err := gorm.Open(mysql.Open(conf.DSN), &gorm.Config{})
+func GetClient(confProvider *conf.MysqlConfProvider) (*Client, error) {
+	db, err := gorm.Open(mysql.Open(confProvider.Get().DSN), &gorm.Config{})
 	if err != nil {
 		panic(fmt.Errorf("failed to connect database, err: %w", err))
 	}
