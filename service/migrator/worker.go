@@ -64,15 +64,15 @@ func (w *Worker) Start(ctx context.Context) error {
 }
 
 func (w *Worker) migrate(ctx context.Context) error {
-	// 获取下一个小时的时间范围
 	timers, err := w.timerDAO.GetTimers(ctx, timerdao.WithStatus(int32(consts.Enabled.ToInt())))
 	if err != nil {
 		return err
 	}
 
+	conf := w.appConfigProvider.Get()
 	var wg sync.WaitGroup
 	now := time.Now()
-	start, end := utils.GetStartHour(now.Add(time.Hour)), utils.GetStartHour(now.Add(2*time.Hour))
+	start, end := utils.GetStartHour(now.Add(time.Duration(conf.MigrateStepMinutes)*time.Minute)), utils.GetStartHour(now.Add(2*time.Duration(conf.MigrateStepMinutes)*time.Minute))
 	for _, timer := range timers {
 		wg.Add(1)
 		go func(timer *po.Timer) {

@@ -30,7 +30,8 @@ migrator:
   migrateStepMinutes: 60
   migrateTryLockMinutes: 20
   migrateSuccessExpireMinutes: 120
+  timerDetailCacheMinutes: 2
 lock:
-  tryLockSeconds: 20
+  tryLockSeconds: 70
   tryLockGapSeconds: 1
-  successExpireSeconds: 120
+  successExpireSeconds: 130

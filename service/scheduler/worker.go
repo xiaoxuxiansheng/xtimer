@@ -2,35 +2,30 @@ package scheduler
 
 import (
 	"context"
-	"sync"
 	"time"
 
 	"github.com/xiaoxuxiansheng/xtimer/common/conf"
 	"github.com/xiaoxuxiansheng/xtimer/common/consts"
 	"github.com/xiaoxuxiansheng/xtimer/common/utils"
 	"github.com/xiaoxuxiansheng/xtimer/pkg/log"
-	"github.com/xiaoxuxiansheng/xtimer/pkg/pool"
 	"github.com/xiaoxuxiansheng/xtimer/pkg/redis"
 	"github.com/xiaoxuxiansheng/xtimer/service/trigger"
 )
 
 type Worker struct {
-	sync.Once
 	appConfProvider  appConfProvider
 	lockConfProvider *conf.LockConfProvider
 	trigger          *trigger.Worker
 	lockService      lockService
-	pool             pool.WorkerPool
 	stop             func()
 }
 
-func NewWorker(trigger *trigger.Worker, lockService *redis.Client, appConfProvider *conf.SchedulerAppConfProvider, lockConfProvider *conf.LockConfProvider, pool *pool.GoWorkerPool) *Worker {
+func NewWorker(trigger *trigger.Worker, lockService *redis.Client, appConfProvider *conf.SchedulerAppConfProvider, lockConfProvider *conf.LockConfProvider) *Worker {
 	return &Worker{
 		trigger:          trigger,
 		lockService:      lockService,
 		lockConfProvider: lockConfProvider,
 		appConfProvider:  appConfProvider,
-		pool:             pool,
 	}
 }
 
@@ -48,7 +43,7 @@ func (w *Worker) Start(ctx context.Context) error {
 		default:
 		}
 
-		w.tryProduceSlices(ctx)
+		w.handleSlices(ctx)
 	}
 	return nil
 }
@@ -59,39 +54,29 @@ func (w *Worker) Stop() {
 	}
 }
 
-func (w *Worker) tryProduceSlices(ctx context.Context) {
+func (w *Worker) handleSlices(ctx context.Context) {
 	conf := w.appConfProvider.Get()
 	for i := 0; i < conf.BucketsNum; i++ {
-		if err := w.tryProduceSlice(ctx, i); err != nil {
-			return
-		}
+		w.handleSlice(ctx, i)
 	}
 }
 
-func (w *Worker) tryProduceSlice(ctx context.Context, bucketID int) error {
-	lockConf := w.lockConfProvider.Get()
+func (w *Worker) handleSlice(ctx context.Context, bucketID int) {
 	now := time.Now()
-	locker := w.lockService.GetDistributionLock(utils.GetTimeBucketLockKey(now, bucketID))
-	if err := locker.Lock(ctx, int64(lockConf.TryLockSeconds)); err != nil {
-		return nil
-	}
-
-	key := utils.GetSliceMsgKey(now, bucketID)
-	if err := w.produceSlice(ctx, key); err != nil {
-		log.ErrorContextf(ctx, "produce slice token failed, key: %s", key)
-		return err
-	}
-	log.InfoContextf(ctx, "produce slice token successed, key: %s", key)
-
-	return locker.ExpireLock(ctx, int64(lockConf.SuccessExpireSeconds))
+	go w.asyncHandleSlice(ctx, now.Add(-1*time.Minute), bucketID)
+	go w.asyncHandleSlice(ctx, now, bucketID)
 }
 
-func (w *Worker) produceSlice(ctx context.Context, key string) error {
-	return w.pool.Submit(func() {
-		if err := w.trigger.Work(ctx, key); err != nil {
-			log.ErrorContextf(ctx, "trigger work failed, err: %v", err)
-		}
-	})
+func (w *Worker) asyncHandleSlice(ctx context.Context, t time.Time, bucketID int) {
+	lockConf := w.lockConfProvider.Get()
+	locker := w.lockService.GetDistributionLock(utils.GetTimeBucketLockKey(t, bucketID))
+	if err := locker.Lock(ctx, int64(lockConf.TryLockSeconds)); err != nil {
+		return
+	}
+
+	if err := w.trigger.Work(ctx, utils.GetSliceMsgKey(t, bucketID)); err != nil {
+		log.ErrorContextf(ctx, "trigger work failed, err: %v", err)
+	}
 }
 
 type appConfProvider interface {

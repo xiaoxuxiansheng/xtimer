@@ -46,8 +46,7 @@ func (w *Worker) Work(ctx context.Context, timerIDUnixKey string) error {
 		// 查库判断定时器状态
 		task, err := w.taskDAO.GetTask(ctx, taskdao.WithTimerID(timerID), taskdao.WithRunTimer(time.Unix(unix, 0)))
 		if err == nil && task.Status != consts.NotRunned.ToInt() {
-			// 重复执行的任务，不再执行，并且回复 ack 避免重发
-
+			// 重复执行的任务
 			log.WarnContextf(ctx, "task is already executed, timerID: %d, exec_time: %v", timerID, task.RunTimer)
 			return nil
 		}
@@ -63,7 +62,7 @@ func (w *Worker) executeAndPostProcess(ctx context.Context, timerID uint, unix i
 		return err
 	}
 
-	// 定时器已经处于去激活态，则无需处理任务，并回复 ack 保证消息不被重发.
+	// 定时器已经处于去激活态，则无需处理任务
 	if timer.Status != consts.Enabled {
 		log.WarnContextf(ctx, "timer has alread been unabled, timerID: %d", timerID)
 		return nil

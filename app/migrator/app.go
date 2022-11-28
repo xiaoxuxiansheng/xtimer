@@ -8,16 +8,6 @@ import (
 	service "github.com/xiaoxuxiansheng/xtimer/service/migrator"
 )
 
-// var (
-// 	app *MigratorApp
-// )
-
-// func GetWorkerApp() (*MigratorApp, error) {
-// 	return app, container.Invoke(func(_app *MigratorApp) {
-// 		app = _app
-// 	})
-// }
-
 // 定期从 timer 表中加载一系列 task 记录添加到 task 表中
 // 并且将 一系列 task 添加到 redis zset 当中
 type MigratorApp struct {

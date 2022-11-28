@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/xiaoxuxiansheng/xtimer/common/conf"
@@ -16,7 +15,6 @@ import (
 )
 
 type Worker struct {
-	sync.Once
 	task         taskService
 	confProvider confProvider
 	pool         pool.WorkerPool

@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/xiaoxuxiansheng/xtimer/common/conf"
 	"github.com/xiaoxuxiansheng/xtimer/common/consts"
 	"github.com/xiaoxuxiansheng/xtimer/common/model/po"
 	"github.com/xiaoxuxiansheng/xtimer/common/model/vo"
@@ -12,25 +13,28 @@ import (
 )
 
 type TimerService struct {
-	ctx      context.Context
-	stop     func()
-	timers   map[uint]*vo.Timer
-	timerDAO timerDAO
-	taskDAO  *taskdao.TaskDAO
+	confProvider *conf.MigratorAppConfProvider
+	ctx          context.Context
+	stop         func()
+	timers       map[uint]*vo.Timer
+	timerDAO     timerDAO
+	taskDAO      *taskdao.TaskDAO
 }
 
-func NewTimerService(timerDAO *timerdao.TimerDAO, taskDAO *taskdao.TaskDAO) *TimerService {
+func NewTimerService(timerDAO *timerdao.TimerDAO, taskDAO *taskdao.TaskDAO, confProvider *conf.MigratorAppConfProvider) *TimerService {
 	return &TimerService{
-		timers:   make(map[uint]*vo.Timer),
-		timerDAO: timerDAO,
-		taskDAO:  taskDAO,
+		confProvider: confProvider,
+		timers:       make(map[uint]*vo.Timer),
+		timerDAO:     timerDAO,
+		taskDAO:      taskDAO,
 	}
 }
 
 func (t *TimerService) Start(ctx context.Context) {
 	t.ctx, t.stop = context.WithCancel(ctx)
 
-	ticker := time.NewTicker(time.Minute)
+	stepMinutes := t.confProvider.Get().TimerDetailCacheMinutes
+	ticker := time.NewTicker(time.Duration(stepMinutes) * time.Minute)
 	defer ticker.Stop()
 
 	for range ticker.C {
@@ -40,9 +44,8 @@ func (t *TimerService) Start(ctx context.Context) {
 		default:
 		}
 
-		// 每隔 2 min，丢弃旧 map 创建一个新 map, 获取后两分钟待执行的定时器，加载到内存中
 		start := time.Now()
-		t.timers, _ = t.getTimersByTime(ctx, start, start.Add(2*time.Minute))
+		t.timers, _ = t.getTimersByTime(ctx, start, start.Add(time.Duration(stepMinutes)*time.Minute))
 	}
 }
 
@@ -97,7 +100,6 @@ func (t *TimerService) GetTimer(ctx context.Context, id uint) (*vo.Timer, error)
 		return vTimer, nil
 	}
 
-	// 内存 miss 再读 mysql
 	timer, err := t.timerDAO.GetTimer(ctx, timerdao.WithID(id))
 	if err != nil {
 		return nil, err

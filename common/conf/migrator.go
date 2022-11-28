@@ -5,6 +5,7 @@ type MigratorAppConf struct {
 	MigrateStepMinutes         int `yaml:"migrateStepMinutes"`
 	MigrateSucessExpireMinutes int `yaml:"migrateSuccessExpireMinutes"`
 	MigrateTryLockMinutes      int `yaml:"migrateTryLockMinutes"`
+	TimerDetailCacheMinutes    int `yaml:"timerDetailCacheMinutes"`
 }
 
 var defaultMigratorAppConfProvider *MigratorAppConfProvider
