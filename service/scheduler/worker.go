@@ -13,27 +13,23 @@ import (
 )
 
 type Worker struct {
-	appConfProvider  appConfProvider
-	lockConfProvider *conf.LockConfProvider
-	trigger          *trigger.Worker
-	lockService      lockService
-	stop             func()
+	appConfProvider appConfProvider
+	trigger         *trigger.Worker
+	lockService     lockService
 }
 
-func NewWorker(trigger *trigger.Worker, lockService *redis.Client, appConfProvider *conf.SchedulerAppConfProvider, lockConfProvider *conf.LockConfProvider) *Worker {
+func NewWorker(trigger *trigger.Worker, lockService *redis.Client, appConfProvider *conf.SchedulerAppConfProvider) *Worker {
 	return &Worker{
-		trigger:          trigger,
-		lockService:      lockService,
-		lockConfProvider: lockConfProvider,
-		appConfProvider:  appConfProvider,
+		trigger:         trigger,
+		lockService:     lockService,
+		appConfProvider: appConfProvider,
 	}
 }
 
 func (w *Worker) Start(ctx context.Context) error {
 	workerID, _ := ctx.Value(consts.WorkerIDContextKey).(int)
-	lockConf := w.lockConfProvider.Get()
-	ticker := time.NewTicker(time.Duration(lockConf.TryLockGapSeconds) * time.Second)
-	w.stop = ticker.Stop
+	ticker := time.NewTicker(time.Duration(w.appConfProvider.Get().TryLockGapSeconds) * time.Second)
+	defer ticker.Stop()
 
 	for range ticker.C {
 		select {
@@ -48,29 +44,21 @@ func (w *Worker) Start(ctx context.Context) error {
 	return nil
 }
 
-func (w *Worker) Stop() {
-	if w.stop != nil {
-		w.stop()
-	}
-}
-
 func (w *Worker) handleSlices(ctx context.Context) {
-	conf := w.appConfProvider.Get()
-	for i := 0; i < conf.BucketsNum; i++ {
+	for i := 0; i < w.appConfProvider.Get().BucketsNum; i++ {
 		w.handleSlice(ctx, i)
 	}
 }
 
 func (w *Worker) handleSlice(ctx context.Context, bucketID int) {
 	now := time.Now()
-	go w.asyncHandleSlice(ctx, now.Add(-1*time.Minute), bucketID)
+	go w.asyncHandleSlice(ctx, now.Add(-time.Minute), bucketID)
 	go w.asyncHandleSlice(ctx, now, bucketID)
 }
 
 func (w *Worker) asyncHandleSlice(ctx context.Context, t time.Time, bucketID int) {
-	lockConf := w.lockConfProvider.Get()
 	locker := w.lockService.GetDistributionLock(utils.GetTimeBucketLockKey(t, bucketID))
-	if err := locker.Lock(ctx, int64(lockConf.TryLockSeconds)); err != nil {
+	if err := locker.Lock(ctx, int64(w.appConfProvider.Get().TryLockSeconds)); err != nil {
 		return
 	}
 

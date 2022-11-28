@@ -6,7 +6,6 @@ import (
 	"fmt"
 	nethttp "net/http"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/xiaoxuxiansheng/xtimer/common/consts"
@@ -19,7 +18,6 @@ import (
 )
 
 type Worker struct {
-	sync.Once
 	timerService *TimerService
 	taskDAO      *taskdao.TaskDAO
 	httpClient   *xhttp.JSONClient

@@ -14,10 +14,10 @@ import (
 
 type TaskCache struct {
 	client       cacheClient
-	confProvider *conf.SliceConfProvider
+	confProvider *conf.SchedulerAppConfProvider
 }
 
-func NewTaskCache(client *redis.Client, confProvider *conf.SliceConfProvider) *TaskCache {
+func NewTaskCache(client *redis.Client, confProvider *conf.SchedulerAppConfProvider) *TaskCache {
 	return &TaskCache{client: client, confProvider: confProvider}
 }
 

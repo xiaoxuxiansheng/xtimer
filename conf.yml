@@ -1,37 +1,34 @@
-executor:
-  workersNum: 2
-scheduler:
-  workersNum: 2
-  bucketsNum: 2
-trigger:
-  workersNum: 2
-  zrangeGapSeconds: 1
-webserver:
-  port: 8092
-  bucketsNum: 2
-  migrateTimeStepSeconds: 3600
+# scheduler:
+#   workersNum: 5
+#   bucketsNum: 20
+#   tryLockSeconds: 70
+#   tryLockGapSeconds: 1
+# trigger:
+#   zrangeGapSeconds: 1
+#   workersNum: 10000
+#   successExpireSeconds: 130
+# webserver:
+#   port: 8092
+# migrator:
+#   workersNum: 1000
+#   migrateStepMinutes: 60
+#   migrateTryLockMinutes: 20
+#   migrateSuccessExpireMinutes: 120
+#   timerDetailCacheMinutes: 2
 mysql:
+  ### 必填
   dsn: root:19951212@tcp(43.138.61.23:3306)/ftimer?charset=utf8&parseTime=True&loc=Local
-pool:
-  size: 5000
-  expireSeconds: 10 
+# pool:
+#   size: 500000
+#   expireSeconds: 30
+#   nonBlocking: false
+
 redis:
-  network: tcp 
+  # network: tcp 
+  ## 必填
   address: 43.138.61.23:6379
   password: 19951212
-  maxIdle: 10
-  idleTimeout: 10
-  maxActive: 5000
-  wait: true
-slice:
-  bucketsNum: 2
-migrator:
-  workersNum: 2
-  migrateStepMinutes: 60
-  migrateTryLockMinutes: 20
-  migrateSuccessExpireMinutes: 120
-  timerDetailCacheMinutes: 2
-lock:
-  tryLockSeconds: 70
-  tryLockGapSeconds: 1
-  successExpireSeconds: 130
+  # maxIdle: 10
+  # idleTimeout: 10
+  # maxActive: 5000
+  # wait: true

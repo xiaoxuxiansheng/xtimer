@@ -40,6 +40,21 @@ func GetSliceMsgKey(t time.Time, bucketID int) string {
 	return fmt.Sprintf("%s_%d", t.Format(consts.MinuteFormat), bucketID)
 }
 
+func SplitTimeBucket(key string) (time.Time, int, error) {
+	timerBucket := strings.Split(key, "_")
+	if len(timerBucket) != 2 {
+		return time.Time{}, 0, fmt.Errorf("invalid time bucket key: %s", key)
+	}
+
+	t, err := time.ParseInLocation(consts.MinuteFormat, timerBucket[0], time.Local)
+	if err != nil {
+		return t, 0, err
+	}
+
+	bucket, err := strconv.Atoi(timerBucket[1])
+	return t, bucket, err
+}
+
 func GetForwardTwoMigrateStepEnd(cur time.Time, diff time.Duration) time.Time {
 	end := cur.Add(diff)
 	return time.Date(end.Year(), end.Month(), end.Day(), end.Hour(), 0, 0, 0, time.Local)

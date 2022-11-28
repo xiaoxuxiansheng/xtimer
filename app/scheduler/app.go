@@ -42,13 +42,11 @@ func (w *WorkerApp) Start() {
 
 func (w *WorkerApp) Stop() {
 	w.stop()
-	w.service.Stop()
 	log.WarnContext(w.ctx, "worker app is stopped")
 }
 
 type workerService interface {
 	Start(context.Context) error
-	Stop()
 }
 
 type confProvider interface {

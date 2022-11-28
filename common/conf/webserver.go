@@ -1,9 +1,7 @@
 package conf
 
 type WebServerAppConf struct {
-	Port                    int `yaml:"port"`
-	MigrateTimerStepSeconds int `yaml:"migrateTimeStepSeconds"`
-	BucketsNum              int `yaml:"bucketsNum"`
+	Port int `yaml:"port"`
 }
 
 var defaultWebServerAppConfProvider *WebServerAppConfProvider

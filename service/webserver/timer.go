@@ -18,19 +18,21 @@ import (
 )
 
 type TimerService struct {
-	dao          timerDAO
-	confProvider confProvider
-	cronParser   cronParser
-	taskCache    taskCache
+	dao                 timerDAO
+	confProvider        confProvider
+	migrateConfProvider *conf.MigratorAppConfProvider
+	cronParser          cronParser
+	taskCache           taskCache
 }
 
 func NewTimerService(dao *timerdao.TimerDAO, taskCache *taskdao.TaskCache,
-	confProvider *conf.WebServerAppConfProvider, parser *cron.CronParser) *TimerService {
+	confProvider *conf.WebServerAppConfProvider, migrateConfProvider *conf.MigratorAppConfProvider, parser *cron.CronParser) *TimerService {
 	return &TimerService{
-		dao:          dao,
-		confProvider: confProvider,
-		taskCache:    taskCache,
-		cronParser:   parser,
+		dao:                 dao,
+		confProvider:        confProvider,
+		migrateConfProvider: migrateConfProvider,
+		taskCache:           taskCache,
+		cronParser:          parser,
 	}
 }
 
@@ -72,9 +74,8 @@ func (t *TimerService) EnableTimer(ctx context.Context, id uint) error {
 
 		// 取得批量的执行时机
 		// end 为下两个切片的右边界
-		// TODO(@weixuxu): migrate step 配置化
 		executeTimes, err := t.cronParser.NextsBefore(timer.Cron,
-			utils.GetForwardTwoMigrateStepEnd(time.Now(), 3*time.Duration(60)*time.Minute))
+			utils.GetForwardTwoMigrateStepEnd(time.Now(), 3*time.Duration(t.migrateConfProvider.Get().MigrateStepMinutes)*time.Minute))
 		if err != nil {
 			log.ErrorContextf(ctx, "get executeTimes failed, err: %v", err)
 			return err

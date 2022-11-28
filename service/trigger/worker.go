@@ -4,13 +4,16 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/xiaoxuxiansheng/xtimer/common/conf"
 	"github.com/xiaoxuxiansheng/xtimer/common/model/vo"
 	"github.com/xiaoxuxiansheng/xtimer/common/utils"
+	"github.com/xiaoxuxiansheng/xtimer/pkg/concurrency"
 	"github.com/xiaoxuxiansheng/xtimer/pkg/log"
 	"github.com/xiaoxuxiansheng/xtimer/pkg/pool"
+	"github.com/xiaoxuxiansheng/xtimer/pkg/redis"
 	"github.com/xiaoxuxiansheng/xtimer/service/executor"
 )
 
@@ -19,13 +22,15 @@ type Worker struct {
 	confProvider confProvider
 	pool         pool.WorkerPool
 	executor     *executor.Worker
+	lockService  *redis.Client
 }
 
-func NewWorker(executor *executor.Worker, task *TaskService, pool *pool.GoWorkerPool, confProvider *conf.TriggerAppConfProvider) *Worker {
+func NewWorker(executor *executor.Worker, task *TaskService, lockService *redis.Client, confProvider *conf.TriggerAppConfProvider) *Worker {
 	return &Worker{
 		executor:     executor,
 		task:         task,
-		pool:         pool,
+		lockService:  lockService,
+		pool:         pool.NewGoWorkerPool(confProvider.Get().WorkersNum),
 		confProvider: confProvider,
 	}
 }
@@ -38,15 +43,66 @@ func (w *Worker) Work(ctx context.Context, minuteBucketKey string) error {
 		return err
 	}
 
-	for move := startTime; move.Before(startTime.Add(time.Minute)); move = move.Add(time.Duration(conf.ZRangeGapSeconds) * time.Second) {
-		if err := w.handleBatch(ctx, minuteBucketKey, move, move.Add(time.Duration(conf.ZRangeGapSeconds)*time.Second)); err != nil {
-			return err
+	ticker := time.NewTicker(time.Duration(conf.ZRangeGapSeconds) * time.Second)
+	defer ticker.Stop()
+
+	endTime := startTime.Add(time.Minute)
+
+	notifier := concurrency.NewSafeChan(int(time.Minute/time.Duration(conf.ZRangeGapSeconds)*time.Second) + 1)
+	defer notifier.Close()
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if err := w.handleBatch(ctx, minuteBucketKey, startTime, startTime.Add(time.Duration(conf.ZRangeGapSeconds)*time.Second)); err != nil {
+			notifier.Put(err)
 		}
+	}()
+	go w.handleBatchAndNotifyErr(ctx, minuteBucketKey, startTime, startTime.Add(time.Duration(conf.ZRangeGapSeconds)*time.Second), notifier)
+	for range ticker.C {
+		select {
+		case e := <-notifier.GetChan():
+			err, _ = e.(error)
+			return err
+		default:
+		}
+
+		if startTime = startTime.Add(time.Duration(conf.ZRangeGapSeconds) * time.Second); startTime.Equal(endTime) || startTime.After(endTime) {
+			break
+		}
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if err := w.handleBatch(ctx, minuteBucketKey, startTime, startTime.Add(time.Duration(conf.ZRangeGapSeconds)*time.Second)); err != nil {
+				notifier.Put(err)
+			}
+		}()
+	}
+
+	wg.Wait()
+	select {
+	case e := <-notifier.GetChan():
+		err, _ = e.(error)
+		return err
+	default:
 	}
 
 	log.InfoContextf(ctx, "handle all tasks of key: %s", minuteBucketKey)
 	// 任务全部执行完成，此时执行 ack
-	return nil
+	t, bucket, _ := utils.SplitTimeBucket(minuteBucketKey)
+	return w.successPostProcess(ctx, t, bucket)
+}
+
+func (w *Worker) successPostProcess(ctx context.Context, t time.Time, bucket int) error {
+	return w.lockService.Expire(ctx, utils.GetTimeBucketLockKey(t, bucket), int64(w.confProvider.Get().SuccessExpireSeconds))
+}
+
+func (w *Worker) handleBatchAndNotifyErr(ctx context.Context, key string, start, end time.Time, notifier *concurrency.SafeChan) {
+	if err := w.handleBatch(ctx, key, start, end); err != nil {
+		notifier.Put(err)
+	}
 }
 
 func (w *Worker) handleBatch(ctx context.Context, key string, start, end time.Time) error {
@@ -61,7 +117,7 @@ func (w *Worker) handleBatch(ctx context.Context, key string, start, end time.Ti
 				log.ErrorContextf(ctx, "executor work failed, err: %v", err)
 			}
 		}); err != nil {
-			log.ErrorContextf(ctx, "handle task failed, err: %v", err)
+			return err
 		}
 	}
 	return nil

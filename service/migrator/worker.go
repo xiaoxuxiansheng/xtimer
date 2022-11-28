@@ -7,12 +7,12 @@ import (
 
 	mconf "github.com/xiaoxuxiansheng/xtimer/common/conf"
 	"github.com/xiaoxuxiansheng/xtimer/common/consts"
-	"github.com/xiaoxuxiansheng/xtimer/common/model/po"
 	"github.com/xiaoxuxiansheng/xtimer/common/utils"
 	taskdao "github.com/xiaoxuxiansheng/xtimer/dao/task"
 	timerdao "github.com/xiaoxuxiansheng/xtimer/dao/timer"
 	"github.com/xiaoxuxiansheng/xtimer/pkg/cron"
 	"github.com/xiaoxuxiansheng/xtimer/pkg/log"
+	"github.com/xiaoxuxiansheng/xtimer/pkg/pool"
 	"github.com/xiaoxuxiansheng/xtimer/pkg/redis"
 )
 
@@ -23,11 +23,13 @@ type Worker struct {
 	cronParser        *cron.CronParser
 	lockService       *redis.Client
 	appConfigProvider *mconf.MigratorAppConfProvider
+	pool              pool.WorkerPool
 }
 
 func NewWorker(timerDAO *timerdao.TimerDAO, taskDAO *taskdao.TaskDAO, taskCache *taskdao.TaskCache, lockService *redis.Client,
 	cronParser *cron.CronParser, appConfigProvider *mconf.MigratorAppConfProvider) *Worker {
 	return &Worker{
+		pool:              pool.NewGoWorkerPool(appConfigProvider.Get().WorkersNum),
 		timerDAO:          timerDAO,
 		taskDAO:           taskDAO,
 		taskCache:         taskCache,
@@ -74,14 +76,18 @@ func (w *Worker) migrate(ctx context.Context) error {
 	now := time.Now()
 	start, end := utils.GetStartHour(now.Add(time.Duration(conf.MigrateStepMinutes)*time.Minute)), utils.GetStartHour(now.Add(2*time.Duration(conf.MigrateStepMinutes)*time.Minute))
 	for _, timer := range timers {
+		// shadow
+		timer := timer
 		wg.Add(1)
-		go func(timer *po.Timer) {
+		if err := w.pool.Submit(func() {
 			defer wg.Done()
 			nexts, _ := w.cronParser.NextsBetween(timer.Cron, start, end)
 			if err := w.timerDAO.BatchCreateRecords(ctx, timer.BatchTasksFromTimer(nexts)); err != nil {
 				log.ErrorContextf(ctx, "batch create records for timer: %d failed, err: %v", timer.ID, err)
 			}
-		}(timer)
+		}); err != nil {
+			wg.Done()
+		}
 	}
 
 	wg.Wait()

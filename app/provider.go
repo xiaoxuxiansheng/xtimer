@@ -38,15 +38,11 @@ func init() {
 
 func provideConfig(c *dig.Container) {
 	c.Provide(conf.DefaultMysqlConfProvider)
-	c.Provide(conf.DefaultLockConfProvider)
-	c.Provide(conf.DefaultWorkerPoolConfProvider)
 	c.Provide(conf.DefaultSchedulerAppConfProvider)
 	c.Provide(conf.DefaultTriggerAppConfProvider)
 	c.Provide(conf.DefaultWebServerAppConfProvider)
 	c.Provide(conf.DefaultRedisConfigProvider)
 	c.Provide(conf.DefaultMigratorAppConfProvider)
-	c.Provide(conf.DefaultLockConfProvider)
-	c.Provide(conf.DefaultSliceConfigProvider)
 }
 
 func providePKG(c *dig.Container) {

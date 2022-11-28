@@ -1,10 +1,6 @@
 package pool
 
 import (
-	"time"
-
-	"github.com/xiaoxuxiansheng/xtimer/common/conf"
-
 	"github.com/panjf2000/ants/v2"
 )
 
@@ -15,8 +11,7 @@ type WorkerPool interface {
 
 // GoWorkerPool golang 协程工作池.
 type GoWorkerPool struct {
-	pool         *ants.Pool
-	confProvider confProvider
+	pool *ants.Pool
 }
 
 // Submit 提交任务.
@@ -24,24 +19,12 @@ func (g *GoWorkerPool) Submit(f func()) error {
 	return g.pool.Submit(f)
 }
 
-func NewGoWorkerPool(confProvider confProvider) (*GoWorkerPool, error) {
-	p := GoWorkerPool{
-		confProvider: confProvider,
-	}
-
-	conf := p.confProvider.Get()
-
+func NewGoWorkerPool(size int) *GoWorkerPool {
 	pool, err := ants.NewPool(
-		conf.Size,
-		ants.WithExpiryDuration(time.Duration(conf.ExpireSeconds)*time.Second),
+		size,
 	)
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
-	p.pool = pool
-	return &p, nil
-}
-
-type confProvider interface {
-	Get() *conf.WorkerPoolConf
+	return &GoWorkerPool{pool: pool}
 }
