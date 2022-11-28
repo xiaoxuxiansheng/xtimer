@@ -40,6 +40,8 @@ func (w *Worker) Work(ctx context.Context, timerIDUnixKey string) error {
 		return err
 	}
 
+	log.InfoContextf(ctx, "hand task, timeriD: %d, unix: %d", timerID, unix)
+
 	if exist, err := w.bloomFilter.Exist(ctx, utils.GetTaskBloomFilterKeyByDay(utils.GetDayStr(time.Unix(unix, 0))), timerIDUnixKey); err != nil || exist {
 		// 查库判断定时器状态
 		task, err := w.taskDAO.GetTask(ctx, taskdao.WithTimerID(timerID), taskdao.WithRunTimer(time.Unix(unix, 0)))

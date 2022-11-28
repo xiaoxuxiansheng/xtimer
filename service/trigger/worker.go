@@ -48,7 +48,7 @@ func (w *Worker) Work(ctx context.Context, minuteBucketKey string) error {
 
 	endTime := startTime.Add(time.Minute)
 
-	notifier := concurrency.NewSafeChan(int(time.Minute/time.Duration(conf.ZRangeGapSeconds)*time.Second) + 1)
+	notifier := concurrency.NewSafeChan(int(time.Minute/(time.Duration(conf.ZRangeGapSeconds)*time.Second)) + 1)
 	defer notifier.Close()
 
 	var wg sync.WaitGroup
@@ -71,6 +71,8 @@ func (w *Worker) Work(ctx context.Context, minuteBucketKey string) error {
 		if startTime = startTime.Add(time.Duration(conf.ZRangeGapSeconds) * time.Second); startTime.Equal(endTime) || startTime.After(endTime) {
 			break
 		}
+
+		// log.InfoContextf(ctx, "start time: %v", startTime)
 
 		wg.Add(1)
 		go func() {
@@ -110,6 +112,8 @@ func (w *Worker) handleBatch(ctx context.Context, key string, start, end time.Ti
 	if err != nil {
 		return err
 	}
+
+	// log.InfoContextf(ctx, "get tasks: %+v", tasks)
 
 	for _, task := range tasks {
 		if err := w.pool.Submit(func() {

@@ -62,6 +62,9 @@ func (w *Worker) asyncHandleSlice(ctx context.Context, t time.Time, bucketID int
 		return
 	}
 
+	workerID, _ := ctx.Value(consts.WorkerIDContextKey).(int)
+	log.InfoContextf(ctx, "get scheduler lock success, key: %s, worker: %d", utils.GetSliceMsgKey(t, bucketID), workerID)
+
 	if err := w.trigger.Work(ctx, utils.GetSliceMsgKey(t, bucketID)); err != nil {
 		log.ErrorContextf(ctx, "trigger work failed, err: %v", err)
 	}
