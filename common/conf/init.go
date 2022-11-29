@@ -51,13 +51,13 @@ var gConf GloablConf = GloablConf{
 
 	Scheduler: &SchedulerAppConf{
 		// 单节点并行协程数
-		WorkersNum: 2,
+		WorkersNum: 100,
 		// 分桶数量
-		BucketsNum: 2,
+		BucketsNum: 1,
 		// 调度器获取分布式锁时初设的过期时间，单位：s
 		TryLockSeconds: 70,
 		// 调度器每次尝试获取分布式锁的时间间隔，单位：s
-		TryLockGapSeconds: 1,
+		TryLockGapSeconds: 5,
 		// 时间片执行成功后，更新的分布式锁时间，单位：s
 		SuccessExpireSeconds: 130,
 	},

@@ -5,14 +5,15 @@ import (
 	"time"
 
 	"github.com/xiaoxuxiansheng/xtimer/common/conf"
-	"github.com/xiaoxuxiansheng/xtimer/common/consts"
 	"github.com/xiaoxuxiansheng/xtimer/common/utils"
 	"github.com/xiaoxuxiansheng/xtimer/pkg/log"
+	"github.com/xiaoxuxiansheng/xtimer/pkg/pool"
 	"github.com/xiaoxuxiansheng/xtimer/pkg/redis"
 	"github.com/xiaoxuxiansheng/xtimer/service/trigger"
 )
 
 type Worker struct {
+	pool            pool.WorkerPool
 	appConfProvider appConfProvider
 	trigger         *trigger.Worker
 	lockService     lockService
@@ -20,6 +21,7 @@ type Worker struct {
 
 func NewWorker(trigger *trigger.Worker, lockService *redis.Client, appConfProvider *conf.SchedulerAppConfProvider) *Worker {
 	return &Worker{
+		pool:            pool.NewGoWorkerPool(appConfProvider.Get().WorkersNum),
 		trigger:         trigger,
 		lockService:     lockService,
 		appConfProvider: appConfProvider,
@@ -27,14 +29,14 @@ func NewWorker(trigger *trigger.Worker, lockService *redis.Client, appConfProvid
 }
 
 func (w *Worker) Start(ctx context.Context) error {
-	workerID, _ := ctx.Value(consts.WorkerIDContextKey).(int)
 	ticker := time.NewTicker(time.Duration(w.appConfProvider.Get().TryLockGapSeconds) * time.Second)
 	defer ticker.Stop()
 
 	for range ticker.C {
+		log.InfoContextf(ctx, "ticking: %v", time.Now())
 		select {
 		case <-ctx.Done():
-			log.WarnContextf(ctx, "worker: %d is stopped", workerID)
+			log.WarnContext(ctx, "stopped")
 			return nil
 		default:
 		}
@@ -52,18 +54,26 @@ func (w *Worker) handleSlices(ctx context.Context) {
 
 func (w *Worker) handleSlice(ctx context.Context, bucketID int) {
 	now := time.Now()
-	go w.asyncHandleSlice(ctx, now.Add(-time.Minute), bucketID)
-	go w.asyncHandleSlice(ctx, now, bucketID)
+	if err := w.pool.Submit(func() {
+		w.asyncHandleSlice(ctx, now.Add(-time.Minute), bucketID)
+	}); err != nil {
+		log.ErrorContextf(ctx, "[handle slice] submit task failed, err: %v", err)
+	}
+	if err := w.pool.Submit(func() {
+		w.asyncHandleSlice(ctx, now, bucketID)
+	}); err != nil {
+		log.ErrorContextf(ctx, "[handle slice] submit task failed, err: %v", err)
+	}
 }
 
 func (w *Worker) asyncHandleSlice(ctx context.Context, t time.Time, bucketID int) {
 	locker := w.lockService.GetDistributionLock(utils.GetTimeBucketLockKey(t, bucketID))
 	if err := locker.Lock(ctx, int64(w.appConfProvider.Get().TryLockSeconds)); err != nil {
+		log.WarnContextf(ctx, "get lock failed, err: %v, key: %s", err, utils.GetTimeBucketLockKey(t, bucketID))
 		return
 	}
 
-	workerID, _ := ctx.Value(consts.WorkerIDContextKey).(int)
-	log.InfoContextf(ctx, "get scheduler lock success, key: %s, worker: %d", utils.GetTimeBucketLockKey(t, bucketID), workerID)
+	log.InfoContextf(ctx, "get scheduler lock success, key: %s", utils.GetTimeBucketLockKey(t, bucketID))
 
 	ack := func() {
 		if err := locker.ExpireLock(ctx, int64(w.appConfProvider.Get().SuccessExpireSeconds)); err != nil {

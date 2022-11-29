@@ -1,6 +1,7 @@
 package conf
 
 type SchedulerAppConf struct {
+	SchedulersNum        int `yaml:"schedulersNum"`
 	WorkersNum           int `yaml:"workersNum"`
 	BucketsNum           int `yaml:"bucketsNum"`
 	TryLockSeconds       int `yaml:"tryLockSeconds"`
