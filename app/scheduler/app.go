@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"context"
+	"sync"
 
 	"github.com/xiaoxuxiansheng/xtimer/common/conf"
 	"github.com/xiaoxuxiansheng/xtimer/common/consts"
@@ -11,6 +12,7 @@ import (
 
 // 读取配置启动多个协程进行
 type WorkerApp struct {
+	sync.Once
 	confProvider confProvider
 	service      workerService
 	ctx          context.Context
@@ -28,6 +30,10 @@ func NewWorkerApp(service *service.Worker, confProvider *conf.SchedulerAppConfPr
 }
 
 func (w *WorkerApp) Start() {
+	w.Do(w.start)
+}
+
+func (w *WorkerApp) start() {
 	log.InfoContext(w.ctx, "worker app is starting")
 	for i := 0; i < w.confProvider.Get().WorkersNum; i++ {
 		i := i

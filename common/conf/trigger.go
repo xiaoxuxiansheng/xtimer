@@ -1,9 +1,8 @@
 package conf
 
 type TriggerAppConf struct {
-	ZRangeGapSeconds     int `yaml:"zrangeGapSeconds"`
-	WorkersNum           int `yaml:"workersNum"`
-	SuccessExpireSeconds int `yaml:"successExpireSeconds"`
+	ZRangeGapSeconds int `yaml:"zrangeGapSeconds"`
+	WorkersNum       int `yaml:"workersNum"`
 }
 
 var defaultTriggerAppConfProvider *TriggerAppConfProvider

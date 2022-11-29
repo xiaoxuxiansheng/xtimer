@@ -2,6 +2,7 @@ package migrator
 
 import (
 	"context"
+	"sync"
 
 	"github.com/xiaoxuxiansheng/xtimer/common/conf"
 	"github.com/xiaoxuxiansheng/xtimer/pkg/log"
@@ -10,6 +11,7 @@ import (
 
 // 定期从 timer 表中加载一系列 task 记录添加到 task 表中
 type MigratorApp struct {
+	sync.Once
 	ctx            context.Context
 	stop           func()
 	worker         *service.Worker
@@ -27,11 +29,13 @@ func NewMigratorApp(worker *service.Worker, configProvider *conf.MigratorAppConf
 }
 
 func (m *MigratorApp) Start() {
-	go func() {
-		if err := m.worker.Start(m.ctx); err != nil {
-			log.ErrorContextf(m.ctx, "start worker failed, err: %v", err)
-		}
-	}()
+	m.Do(func() {
+		go func() {
+			if err := m.worker.Start(m.ctx); err != nil {
+				log.ErrorContextf(m.ctx, "start worker failed, err: %v", err)
+			}
+		}()
+	})
 }
 
 func (m *MigratorApp) Stop() {

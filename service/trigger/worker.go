@@ -35,7 +35,7 @@ func NewWorker(executor *executor.Worker, task *TaskService, lockService *redis.
 	}
 }
 
-func (w *Worker) Work(ctx context.Context, minuteBucketKey string) error {
+func (w *Worker) Work(ctx context.Context, minuteBucketKey string, ack func()) error {
 	// 进行为时一分钟的 zrange 处理
 	conf := w.confProvider.Get()
 	startTime, err := getStartMinute(minuteBucketKey)
@@ -59,7 +59,6 @@ func (w *Worker) Work(ctx context.Context, minuteBucketKey string) error {
 			notifier.Put(err)
 		}
 	}()
-	go w.handleBatchAndNotifyErr(ctx, minuteBucketKey, startTime, startTime.Add(time.Duration(conf.ZRangeGapSeconds)*time.Second), notifier)
 	for range ticker.C {
 		select {
 		case e := <-notifier.GetChan():
@@ -92,19 +91,8 @@ func (w *Worker) Work(ctx context.Context, minuteBucketKey string) error {
 	}
 
 	log.InfoContextf(ctx, "handle all tasks of key: %s", minuteBucketKey)
-	// 任务全部执行完成，此时执行 ack
-	t, bucket, _ := utils.SplitTimeBucket(minuteBucketKey)
-	return w.successPostProcess(ctx, t, bucket)
-}
-
-func (w *Worker) successPostProcess(ctx context.Context, t time.Time, bucket int) error {
-	return w.lockService.Expire(ctx, utils.GetTimeBucketLockKey(t, bucket), int64(w.confProvider.Get().SuccessExpireSeconds))
-}
-
-func (w *Worker) handleBatchAndNotifyErr(ctx context.Context, key string, start, end time.Time, notifier *concurrency.SafeChan) {
-	if err := w.handleBatch(ctx, key, start, end); err != nil {
-		notifier.Put(err)
-	}
+	ack()
+	return nil
 }
 
 func (w *Worker) handleBatch(ctx context.Context, key string, start, end time.Time) error {

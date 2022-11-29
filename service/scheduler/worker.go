@@ -63,9 +63,15 @@ func (w *Worker) asyncHandleSlice(ctx context.Context, t time.Time, bucketID int
 	}
 
 	workerID, _ := ctx.Value(consts.WorkerIDContextKey).(int)
-	log.InfoContextf(ctx, "get scheduler lock success, key: %s, worker: %d", utils.GetSliceMsgKey(t, bucketID), workerID)
+	log.InfoContextf(ctx, "get scheduler lock success, key: %s, worker: %d", utils.GetTimeBucketLockKey(t, bucketID), workerID)
 
-	if err := w.trigger.Work(ctx, utils.GetSliceMsgKey(t, bucketID)); err != nil {
+	ack := func() {
+		if err := locker.ExpireLock(ctx, int64(w.appConfProvider.Get().SuccessExpireSeconds)); err != nil {
+			log.ErrorContextf(ctx, "expire lock failed, lock key: %s, err: %v", utils.GetTimeBucketLockKey(t, bucketID), err)
+		}
+	}
+
+	if err := w.trigger.Work(ctx, utils.GetSliceMsgKey(t, bucketID), ack); err != nil {
 		log.ErrorContextf(ctx, "trigger work failed, err: %v", err)
 	}
 }

@@ -1,10 +1,11 @@
 package conf
 
 type SchedulerAppConf struct {
-	WorkersNum        int `yaml:"workersNum"`
-	BucketsNum        int `yaml:"bucketsNum"`
-	TryLockSeconds    int `yaml:"tryLockSeconds"`
-	TryLockGapSeconds int `yaml:"tryLockGapSeconds"`
+	WorkersNum           int `yaml:"workersNum"`
+	BucketsNum           int `yaml:"bucketsNum"`
+	TryLockSeconds       int `yaml:"tryLockSeconds"`
+	TryLockGapSeconds    int `yaml:"tryLockGapSeconds"`
+	SuccessExpireSeconds int `yaml:"successExpireSeconds"`
 }
 
 var defaultSchedulerAppConfProvider *SchedulerAppConfProvider
