@@ -34,6 +34,10 @@ func NewWorker(timerService *TimerService, taskDAO *taskdao.TaskDAO, httpClient 
 }
 
 func (w *Worker) Work(ctx context.Context, timerIDUnixKey string) error {
+	log.InfoContextf(ctx, "executor_1 start: %v", time.Now())
+	defer func() {
+		log.InfoContextf(ctx, "executor_1 end: %v", time.Now())
+	}()
 	// 拿到消息，查询一次完整的 timer 定义
 	timerID, unix, err := utils.SplitTimerIDUnix(timerIDUnixKey)
 	if err != nil {

@@ -188,6 +188,7 @@ func (c *Client) ZrangeByScore(ctx context.Context, table string, score1, score2
 	if err != nil {
 		return nil, err
 	}
+	defer conn.Close()
 
 	raws, err := redis.Values(conn.Do("ZRANGEBYSCORE", table, score1, score2))
 	if err != nil {
@@ -238,6 +239,13 @@ func NewZAddCommand(args ...interface{}) *Command {
 func NewSetBitCommand(args ...interface{}) *Command {
 	return &Command{
 		Name: "SETBIT",
+		Args: args,
+	}
+}
+
+func NewExpireCommand(args ...interface{}) *Command {
+	return &Command{
+		Name: "EXPIRE",
 		Args: args,
 	}
 }

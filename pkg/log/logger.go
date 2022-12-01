@@ -43,14 +43,15 @@ type Option func(*Options)
 
 // NewOptions 初始化
 func NewOptions(opts ...Option) Options {
+
 	options := Options{
 		LogName:    "app",
 		LogLevel:   "info",
 		FileName:   "app.log",
-		MaxAge:     3,
-		MaxSize:    10,
+		MaxAge:     10,
+		MaxSize:    100,
 		MaxBackups: 3,
-		Compress:   false,
+		Compress:   true,
 	}
 	for _, opt := range opts {
 		opt(&options)

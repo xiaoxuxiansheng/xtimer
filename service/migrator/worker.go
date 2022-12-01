@@ -45,6 +45,7 @@ func (w *Worker) Start(ctx context.Context) error {
 	defer ticker.Stop()
 
 	for range ticker.C {
+		log.InfoContext(ctx, "migrator ticking...")
 		select {
 		case <-ctx.Done():
 			return nil
@@ -53,10 +54,12 @@ func (w *Worker) Start(ctx context.Context) error {
 
 		locker := w.lockService.GetDistributionLock(utils.GetMigratorLockKey(utils.GetStartHour(time.Now())))
 		if err := locker.Lock(ctx, int64(conf.MigrateTryLockMinutes)*int64(time.Minute/time.Second)); err != nil {
+			log.ErrorContext(ctx, "migrator get lock failed, key: %s, err: %v", utils.GetMigratorLockKey(utils.GetStartHour(time.Now())), err)
 			continue
 		}
 
 		if err := w.migrate(ctx); err != nil {
+			log.ErrorContext(ctx, "migrate failed, err: %v", err)
 			continue
 		}
 
@@ -83,19 +86,21 @@ func (w *Worker) migrate(ctx context.Context) error {
 			defer wg.Done()
 			nexts, _ := w.cronParser.NextsBetween(timer.Cron, start, end)
 			if err := w.timerDAO.BatchCreateRecords(ctx, timer.BatchTasksFromTimer(nexts)); err != nil {
-				log.ErrorContextf(ctx, "batch create records for timer: %d failed, err: %v", timer.ID, err)
+				log.ErrorContextf(ctx, "migrator batch create records for timer: %d failed, err: %v", timer.ID, err)
 			}
 		}); err != nil {
+			log.ErrorContextf(ctx, "migrator submit task failed, err: %v", err)
 			wg.Done()
 		}
 	}
 
 	wg.Wait()
+	log.InfoContext(ctx, "migrator batch create db tasks susccess")
 	// 迁移完成后，将所有添加的 task 取出，添加到 redis 当中
 	tasks, err := w.taskDAO.GetTasks(ctx, taskdao.WithStartTime(start), taskdao.WithEndTime(end))
 	if err != nil {
 		return err
 	}
-
+	log.InfoContext(ctx, "migrator batch get tasks susccess")
 	return w.taskCache.BatchCreateTasks(ctx, tasks)
 }

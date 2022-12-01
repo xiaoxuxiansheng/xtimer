@@ -57,7 +57,7 @@ var gConf GloablConf = GloablConf{
 		// 调度器获取分布式锁时初设的过期时间，单位：s
 		TryLockSeconds: 70,
 		// 调度器每次尝试获取分布式锁的时间间隔，单位：s
-		TryLockGapSeconds: 5,
+		TryLockGapSeconds: 1,
 		// 时间片执行成功后，更新的分布式锁时间，单位：s
 		SuccessExpireSeconds: 130,
 	},
@@ -75,9 +75,9 @@ var gConf GloablConf = GloablConf{
 	Redis: &RedisConfig{
 		Network: "tcp",
 		// 最大空闲连接数
-		MaxIdle: 100,
+		MaxIdle: 500,
 		// 空闲连接超时时间，单位：s
-		IdleTimeoutSeconds: 10,
+		IdleTimeoutSeconds: 30,
 		// 连接池最大存活的连接数
 		MaxActive: 5000,
 		// 当连接数达到上限时，新的请求是等待还是立即报错

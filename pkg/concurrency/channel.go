@@ -24,6 +24,7 @@ func (s *SafeChan) Put(element interface{}) {
 	select {
 	case <-s.ctx.Done():
 	case s.ch <- element:
+	default:
 	}
 }
 

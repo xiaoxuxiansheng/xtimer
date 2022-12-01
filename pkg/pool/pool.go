@@ -1,6 +1,8 @@
 package pool
 
 import (
+	"time"
+
 	"github.com/panjf2000/ants/v2"
 )
 
@@ -22,6 +24,7 @@ func (g *GoWorkerPool) Submit(f func()) error {
 func NewGoWorkerPool(size int) *GoWorkerPool {
 	pool, err := ants.NewPool(
 		size,
+		ants.WithExpiryDuration(time.Minute),
 	)
 	if err != nil {
 		panic(err)

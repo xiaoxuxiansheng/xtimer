@@ -21,7 +21,12 @@ func NewTaskCache(client *redis.Client, confProvider *conf.SchedulerAppConfProvi
 	return &TaskCache{client: client, confProvider: confProvider}
 }
 
+// TODO（@weixuxu）：加上任务的过期时间
 func (t *TaskCache) BatchCreateTasks(ctx context.Context, tasks []*po.Task) error {
+	if len(tasks) == 0 {
+		return nil
+	}
+
 	// TODO(@weixuxu): 动态分桶
 	commands := make([]*redis.Command, 0, len(tasks))
 	for _, task := range tasks {
@@ -29,8 +34,13 @@ func (t *TaskCache) BatchCreateTasks(ctx context.Context, tasks []*po.Task) erro
 		commands = append(commands, redis.NewZAddCommand(t.GetTableName(task), unix, utils.UnionTimerIDUnix(task.TimerID, unix)))
 	}
 
-	_, err := t.client.Transaction(ctx, commands...)
-	return err
+	if _, err := t.client.Transaction(ctx, commands...); err != nil {
+		return err
+	}
+
+	// zset 一天后过期
+	aliveSeconds := int64((tasks[0].RunTimer.Add(24 * time.Hour).Sub(time.Now())) / time.Second)
+	return t.client.Expire(ctx, t.GetTableName(tasks[0]), aliveSeconds)
 }
 
 func (t *TaskCache) GetTasksByTime(ctx context.Context, table string, start, end int64) ([]*po.Task, error) {
@@ -59,4 +69,5 @@ func (t *TaskCache) GetTableName(task *po.Task) string {
 type cacheClient interface {
 	Transaction(ctx context.Context, commands ...*redis.Command) ([]interface{}, error)
 	ZrangeByScore(ctx context.Context, table string, score1, score2 int64) ([]string, error)
+	Expire(ctx context.Context, key string, expireSeconds int64) error
 }

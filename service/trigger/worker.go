@@ -36,13 +36,18 @@ func NewWorker(executor *executor.Worker, task *TaskService, lockService *redis.
 }
 
 func (w *Worker) Work(ctx context.Context, minuteBucketKey string, ack func()) error {
+	log.InfoContextf(ctx, "trigger_1 start: %v", time.Now())
+	defer func() {
+		log.InfoContextf(ctx, "trigger_1 end: %v", time.Now())
+	}()
+
 	// 进行为时一分钟的 zrange 处理
-	conf := w.confProvider.Get()
 	startTime, err := getStartMinute(minuteBucketKey)
 	if err != nil {
 		return err
 	}
 
+	conf := w.confProvider.Get()
 	ticker := time.NewTicker(time.Duration(conf.ZRangeGapSeconds) * time.Second)
 	defer ticker.Stop()
 
@@ -54,6 +59,10 @@ func (w *Worker) Work(ctx context.Context, minuteBucketKey string, ack func()) e
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
+		log.InfoContextf(ctx, "trigger_2 start: %v", time.Now())
+		defer func() {
+			log.InfoContextf(ctx, "trigger_2 end: %v", time.Now())
+		}()
 		defer wg.Done()
 		if err := w.handleBatch(ctx, minuteBucketKey, startTime, startTime.Add(time.Duration(conf.ZRangeGapSeconds)*time.Second)); err != nil {
 			notifier.Put(err)
@@ -75,6 +84,10 @@ func (w *Worker) Work(ctx context.Context, minuteBucketKey string, ack func()) e
 
 		wg.Add(1)
 		go func() {
+			log.InfoContextf(ctx, "trigger_2 start: %v", time.Now())
+			defer func() {
+				log.InfoContextf(ctx, "trigger_2 end: %v", time.Now())
+			}()
 			defer wg.Done()
 			if err := w.handleBatch(ctx, minuteBucketKey, startTime, startTime.Add(time.Duration(conf.ZRangeGapSeconds)*time.Second)); err != nil {
 				notifier.Put(err)
@@ -90,8 +103,8 @@ func (w *Worker) Work(ctx context.Context, minuteBucketKey string, ack func()) e
 	default:
 	}
 
-	log.InfoContextf(ctx, "handle all tasks of key: %s", minuteBucketKey)
 	ack()
+	log.InfoContextf(ctx, "ack success, key: %s", minuteBucketKey)
 	return nil
 }
 
@@ -104,7 +117,12 @@ func (w *Worker) handleBatch(ctx context.Context, key string, start, end time.Ti
 	// log.InfoContextf(ctx, "get tasks: %+v", tasks)
 
 	for _, task := range tasks {
+		task := task
 		if err := w.pool.Submit(func() {
+			log.InfoContextf(ctx, "trigger_3 start: %v", time.Now())
+			defer func() {
+				log.InfoContextf(ctx, "trigger_3 end: %v", time.Now())
+			}()
 			if err := w.executor.Work(ctx, utils.UnionTimerIDUnix(task.TimerID, task.RunTimer.Unix())); err != nil {
 				log.ErrorContextf(ctx, "executor work failed, err: %v", err)
 			}
