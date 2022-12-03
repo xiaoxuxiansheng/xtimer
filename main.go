@@ -12,11 +12,13 @@ func main() {
 	migratorApp := app.GetMigratorApp()
 	schedulerApp := app.GetSchedulerApp()
 	webServer := app.GetWebServer()
+	monitor := app.GetMonitorApp()
 
 	migratorApp.Start()
 	schedulerApp.Start()
 	defer schedulerApp.Stop()
 
+	monitor.Start()
 	webServer.Start()
 
 	quit := make(chan os.Signal, 1)

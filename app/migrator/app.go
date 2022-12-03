@@ -4,7 +4,6 @@ import (
 	"context"
 	"sync"
 
-	"github.com/xiaoxuxiansheng/xtimer/common/conf"
 	"github.com/xiaoxuxiansheng/xtimer/pkg/log"
 	service "github.com/xiaoxuxiansheng/xtimer/service/migrator"
 )
@@ -12,16 +11,14 @@ import (
 // 定期从 timer 表中加载一系列 task 记录添加到 task 表中
 type MigratorApp struct {
 	sync.Once
-	ctx            context.Context
-	stop           func()
-	worker         *service.Worker
-	configProvider *conf.MigratorAppConfProvider
+	ctx    context.Context
+	stop   func()
+	worker *service.Worker
 }
 
-func NewMigratorApp(worker *service.Worker, configProvider *conf.MigratorAppConfProvider) *MigratorApp {
+func NewMigratorApp(worker *service.Worker) *MigratorApp {
 	m := MigratorApp{
-		worker:         worker,
-		configProvider: configProvider,
+		worker: worker,
 	}
 
 	m.ctx, m.stop = context.WithCancel(context.Background())

@@ -36,6 +36,10 @@ func GetMigratorLockKey(t time.Time) string {
 	return fmt.Sprintf("migrator_lock_%s", t.Format(consts.HourFormat))
 }
 
+func GetMonitorLockKey(t time.Time) string {
+	return fmt.Sprintf("monitor_lock_%s", t.Format(consts.MinuteFormat))
+}
+
 func GetSliceMsgKey(t time.Time, bucketID int) string {
 	return fmt.Sprintf("%s_%d", t.Format(consts.MinuteFormat), bucketID)
 }

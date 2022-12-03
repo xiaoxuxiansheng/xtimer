@@ -4,6 +4,7 @@ import (
 	"go.uber.org/dig"
 
 	"github.com/xiaoxuxiansheng/xtimer/app/migrator"
+	"github.com/xiaoxuxiansheng/xtimer/app/monitor"
 	"github.com/xiaoxuxiansheng/xtimer/app/scheduler"
 	"github.com/xiaoxuxiansheng/xtimer/app/webserver"
 	"github.com/xiaoxuxiansheng/xtimer/common/conf"
@@ -13,10 +14,12 @@ import (
 	"github.com/xiaoxuxiansheng/xtimer/pkg/cron"
 	"github.com/xiaoxuxiansheng/xtimer/pkg/hash"
 	"github.com/xiaoxuxiansheng/xtimer/pkg/mysql"
+	"github.com/xiaoxuxiansheng/xtimer/pkg/promethus"
 	"github.com/xiaoxuxiansheng/xtimer/pkg/redis"
 	"github.com/xiaoxuxiansheng/xtimer/pkg/xhttp"
 	executorservice "github.com/xiaoxuxiansheng/xtimer/service/executor"
 	migratorservice "github.com/xiaoxuxiansheng/xtimer/service/migrator"
+	monitorservice "github.com/xiaoxuxiansheng/xtimer/service/monitor"
 	schedulerservice "github.com/xiaoxuxiansheng/xtimer/service/scheduler"
 	triggerservice "github.com/xiaoxuxiansheng/xtimer/service/trigger"
 	webservice "github.com/xiaoxuxiansheng/xtimer/service/webserver"
@@ -53,6 +56,7 @@ func providePKG(c *dig.Container) {
 	c.Provide(mysql.GetClient)
 	c.Provide(cron.NewCronParser)
 	c.Provide(xhttp.NewJSONClient)
+	c.Provide(promethus.GetReporter)
 }
 
 func provideDAO(c *dig.Container) {
@@ -71,6 +75,7 @@ func provideService(c *dig.Container) {
 	c.Provide(triggerservice.NewWorker)
 	c.Provide(triggerservice.NewTaskService)
 	c.Provide(schedulerservice.NewWorker)
+	c.Provide(monitorservice.NewWorker)
 }
 
 func provideApp(c *dig.Container) {
@@ -79,6 +84,7 @@ func provideApp(c *dig.Container) {
 	c.Provide(webserver.NewTimerApp)
 	c.Provide(webserver.NewServer)
 	c.Provide(scheduler.NewWorkerApp)
+	c.Provide(monitor.NewMonitorApp)
 }
 
 func GetSchedulerApp() *scheduler.WorkerApp {
@@ -109,4 +115,14 @@ func GetMigratorApp() *migrator.MigratorApp {
 		panic(err)
 	}
 	return migratorApp
+}
+
+func GetMonitorApp() *monitor.MonitorApp {
+	var monitorApp *monitor.MonitorApp
+	if err := container.Invoke(func(_m *monitor.MonitorApp) {
+		monitorApp = _m
+	}); err != nil {
+		panic(err)
+	}
+	return monitorApp
 }
