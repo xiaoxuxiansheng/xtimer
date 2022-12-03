@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	gs "github.com/swaggo/gin-swagger"
 	"github.com/swaggo/gin-swagger/swaggerFiles"
 	"github.com/xiaoxuxiansheng/xtimer/common/conf"
@@ -38,6 +39,7 @@ func NewServer(timer *TimerApp, task *TaskApp, confProvider *conf.WebServerAppCo
 	s.RegisterBaseRouter()
 	s.RegisterTimerRouter()
 	s.RegisterTaskRouter()
+	s.RegisterMonitorRouter()
 	return &s
 }
 
@@ -72,4 +74,10 @@ func (s *Server) RegisterTimerRouter() {
 
 func (s *Server) RegisterTaskRouter() {
 	s.taskRouter.GET("/records", s.taskApp.GetTasks)
+}
+
+func (s *Server) RegisterMonitorRouter() {
+	s.engine.Any("/metrics", func(ctx *gin.Context) {
+		promhttp.Handler().ServeHTTP(ctx.Writer, ctx.Request)
+	})
 }
