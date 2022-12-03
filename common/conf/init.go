@@ -53,7 +53,7 @@ var gConf GloablConf = GloablConf{
 		// 单节点并行协程数
 		WorkersNum: 100,
 		// 分桶数量
-		BucketsNum: 1,
+		BucketsNum: 10,
 		// 调度器获取分布式锁时初设的过期时间，单位：s
 		TryLockSeconds: 70,
 		// 调度器每次尝试获取分布式锁的时间间隔，单位：s

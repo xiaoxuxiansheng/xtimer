@@ -100,7 +100,11 @@ func (t *TimerApp) EnableTimer(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, vo.NewCodeMsgWithErr(t.service.EnableTimer(c.Request.Context(), req.ID)))
+	if err := t.service.EnableTimer(c.Request.Context(), req.ID); err != nil {
+		c.JSON(http.StatusOK, vo.NewCodeMsg(-1, err.Error()))
+		return
+	}
+	c.JSON(http.StatusOK, vo.NewCodeMsgWithErr(nil))
 }
 
 // UnableTimer 去激活定时器
