@@ -92,10 +92,6 @@ func (t *TimerDAO) DoWithLock(ctx context.Context, id uint, do func(ctx context.
 			return err
 		}
 
-		if err := do(ctx, NewTimerDAO(mysql.NewClient(tx)), &timer); err != nil {
-			return err
-		}
-
-		return tx.Commit().Error
+		return do(ctx, NewTimerDAO(mysql.NewClient(tx)), &timer)
 	})
 }
