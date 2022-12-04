@@ -60,7 +60,6 @@ type Timer struct {
 	ID              uint               `json:"id,omitempty"`
 	App             string             `json:"app,omitempty" binding:"required"`             // 定时器定义名称
 	Name            string             `json:"name,omitempty" binding:"required"`            // 定时器定义名称
-	Creator         string             `json:"creator,omitempty" binding:"required"`         // 创建人
 	Status          consts.TimerStatus `json:"status"`                                       // 定时器定义状态，1:未激活, 2:已激活
 	Cron            string             `json:"cron,omitempty" binding:"required"`            // 定时器定时配置
 	NotifyHTTPParam *NotifyHTTPParam   `json:"notifyHTTPParam,omitempty" binding:"required"` // http 回调参数
@@ -83,7 +82,6 @@ func NewTimer(timer *po.Timer) (*Timer, error) {
 		ID:              timer.ID,
 		App:             timer.App,
 		Name:            timer.Name,
-		Creator:         timer.Creator,
 		Status:          consts.TimerStatus(timer.Status),
 		Cron:            timer.Cron,
 		NotifyHTTPParam: &param,
@@ -122,7 +120,6 @@ func (t *Timer) ToPO() (*po.Timer, error) {
 	timer := po.Timer{
 		App:             t.App,
 		Name:            t.Name,
-		Creator:         t.Creator,
 		Status:          t.Status.ToInt(),
 		Cron:            t.Cron,
 		NotifyHTTPParam: string(param),

@@ -3,6 +3,7 @@ package webserver
 import (
 	"context"
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/xiaoxuxiansheng/xtimer/common/conf"
@@ -131,6 +132,10 @@ func (t *TimerService) GetAppTimers(ctx context.Context, req *vo.GetAppTimersReq
 	if err != nil {
 		return nil, -1, err
 	}
+
+	sort.Slice(timers, func(i, j int) bool {
+		return timers[i].ID > timers[j].ID
+	})
 
 	vTimers, err := vo.NewTimers(timers)
 	return vTimers, total, err

@@ -32,9 +32,9 @@ const (
 	timerUnexecedCnt        = "timer_unexeced_cnt"
 	timerUnexecedCntSummary = "未按时执行的定时器数量"
 
-	reportName        = "_name"
-	reportType        = "_type"
-	timerApp   string = "xtimer"
+	reportName = "_name"
+	reportType = "_type"
+	timerApp   = "xtimerApp"
 
 	// 通用标签.
 	label = "label"

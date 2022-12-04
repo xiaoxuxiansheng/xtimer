@@ -36,7 +36,11 @@ func (t *TimerApp) CreateTimer(c *gin.Context) {
 	}
 
 	id, err := t.service.CreateTimer(c.Request.Context(), &req)
-	c.JSON(http.StatusOK, vo.NewCreateTimerResp(id, vo.NewCodeMsgWithErr(err)))
+	if err != nil {
+		c.JSON(http.StatusOK, vo.NewCodeMsg(-1, err.Error()))
+		return
+	}
+	c.JSON(http.StatusOK, vo.NewCreateTimerResp(id, vo.NewCodeMsgWithErr(nil)))
 }
 
 // GetAppTimers 获取 app 下的定时器
