@@ -83,6 +83,10 @@ var gConf GloablConf = GloablConf{
 		// 当连接数达到上限时，新的请求是等待还是立即报错
 		Wait: true,
 	},
+	Mysql: &MySQLConfig{
+		MaxOpenConns: 151,
+		MaxIdleConns: 50,
+	},
 }
 
 type GloablConf struct {
