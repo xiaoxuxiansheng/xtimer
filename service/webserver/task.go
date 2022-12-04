@@ -3,6 +3,7 @@ package webserver
 import (
 	"context"
 
+	"github.com/xiaoxuxiansheng/xtimer/common/consts"
 	"github.com/xiaoxuxiansheng/xtimer/common/model/vo"
 	dao "github.com/xiaoxuxiansheng/xtimer/dao/task"
 )
@@ -24,7 +25,11 @@ func (t *TaskService) GetTask(ctx context.Context, id uint) (*vo.Task, error) {
 }
 
 func (t *TaskService) GetTasks(ctx context.Context, req *vo.GetTasksReq) ([]*vo.Task, int64, error) {
-	total, err := t.dao.Count(ctx, dao.WithTimerID(req.TimerID))
+	total, err := t.dao.Count(ctx, dao.WithTimerID(req.TimerID), dao.WithStatuses([]int32{
+		int32(consts.Running),
+		int32(consts.Successed),
+		int32(consts.Failed),
+	}))
 	if err != nil {
 		return nil, -1, err
 	}
@@ -33,7 +38,11 @@ func (t *TaskService) GetTasks(ctx context.Context, req *vo.GetTasksReq) ([]*vo.
 	if total <= int64(offset) {
 		return []*vo.Task{}, total, nil
 	}
-	tasks, err := t.dao.GetTasks(ctx, dao.WithTimerID(req.TimerID), dao.WithPageLimit(offset, limit), dao.WithDesc())
+	tasks, err := t.dao.GetTasks(ctx, dao.WithTimerID(req.TimerID), dao.WithPageLimit(offset, limit), dao.WithStatuses([]int32{
+		int32(consts.Running),
+		int32(consts.Successed),
+		int32(consts.Failed),
+	}), dao.WithDesc())
 	if err != nil {
 		return nil, -1, err
 	}

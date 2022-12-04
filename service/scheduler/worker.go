@@ -29,6 +29,8 @@ func NewWorker(trigger *trigger.Worker, lockService *redis.Client, appConfProvid
 }
 
 func (w *Worker) Start(ctx context.Context) error {
+	w.trigger.Start(ctx)
+
 	ticker := time.NewTicker(time.Duration(w.appConfProvider.Get().TryLockGapSeconds) * time.Second)
 	defer ticker.Stop()
 
@@ -52,7 +54,7 @@ func (w *Worker) handleSlices(ctx context.Context) {
 }
 
 func (w *Worker) handleSlice(ctx context.Context, bucketID int) {
-	log.InfoContextf(ctx, "scheduler_1 start: %v", time.Now())
+	// log.InfoContextf(ctx, "scheduler_1 start: %v", time.Now())
 	now := time.Now()
 	if err := w.pool.Submit(func() {
 		w.asyncHandleSlice(ctx, now.Add(-time.Minute), bucketID)
@@ -64,18 +66,18 @@ func (w *Worker) handleSlice(ctx context.Context, bucketID int) {
 	}); err != nil {
 		log.ErrorContextf(ctx, "[handle slice] submit task failed, err: %v", err)
 	}
-	log.InfoContextf(ctx, "scheduler_1 end: %v", time.Now())
+	// log.InfoContextf(ctx, "scheduler_1 end: %v", time.Now())
 }
 
 func (w *Worker) asyncHandleSlice(ctx context.Context, t time.Time, bucketID int) {
-	log.InfoContextf(ctx, "scheduler_2 start: %v", time.Now())
-	defer func() {
-		log.InfoContextf(ctx, "scheduler_2 end: %v", time.Now())
-	}()
+	// log.InfoContextf(ctx, "scheduler_2 start: %v", time.Now())
+	// defer func() {
+	// 	log.InfoContextf(ctx, "scheduler_2 end: %v", time.Now())
+	// }()
 
 	locker := w.lockService.GetDistributionLock(utils.GetTimeBucketLockKey(t, bucketID))
 	if err := locker.Lock(ctx, int64(w.appConfProvider.Get().TryLockSeconds)); err != nil {
-		log.WarnContextf(ctx, "get lock failed, err: %v, key: %s", err, utils.GetTimeBucketLockKey(t, bucketID))
+		// log.WarnContextf(ctx, "get lock failed, err: %v, key: %s", err, utils.GetTimeBucketLockKey(t, bucketID))
 		return
 	}
 

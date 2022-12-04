@@ -36,18 +36,22 @@ func NewWorker(timerService *TimerService, taskDAO *taskdao.TaskDAO, httpClient 
 	}
 }
 
+func (w *Worker) Start(ctx context.Context) {
+	w.timerService.Start(ctx)
+}
+
 func (w *Worker) Work(ctx context.Context, timerIDUnixKey string) error {
-	log.InfoContextf(ctx, "executor_1 start: %v", time.Now())
-	defer func() {
-		log.InfoContextf(ctx, "executor_1 end: %v", time.Now())
-	}()
+	// log.InfoContextf(ctx, "executor_1 start: %v", time.Now())
+	// defer func() {
+	// 	log.InfoContextf(ctx, "executor_1 end: %v", time.Now())
+	// }()
 	// 拿到消息，查询一次完整的 timer 定义
 	timerID, unix, err := utils.SplitTimerIDUnix(timerIDUnixKey)
 	if err != nil {
 		return err
 	}
 
-	if exist, err := w.bloomFilter.Exist(ctx, utils.GetTaskBloomFilterKeyByDay(utils.GetDayStr(time.Unix(unix, 0))), timerIDUnixKey); err != nil || exist {
+	if exist, err := w.bloomFilter.Exist(ctx, utils.GetTaskBloomFilterKey(utils.GetHourStr(time.Unix(unix, 0))), timerIDUnixKey); err != nil || exist {
 		// 查库判断定时器状态
 		task, err := w.taskDAO.GetTask(ctx, taskdao.WithTimerID(timerID), taskdao.WithRunTimer(time.Unix(unix, 0)))
 		if err == nil && task.Status != consts.NotRunned.ToInt() {
@@ -75,7 +79,7 @@ func (w *Worker) executeAndPostProcess(ctx context.Context, timerID uint, unix i
 
 	execTime := time.Now()
 	resp, err := w.execute(ctx, timer)
-	log.InfoContextf(ctx, "execute timer: %d, resp: %v, err: %v", timerID, resp, err)
+	// log.InfoContextf(ctx, "execute timer: %d, resp: %v, err: %v", timerID, resp, err)
 	return w.postProcess(ctx, resp, err, timer.App, timerID, unix, execTime)
 }
 
@@ -102,7 +106,7 @@ func (w *Worker) execute(ctx context.Context, timer *vo.Timer) (map[string]inter
 
 func (w *Worker) postProcess(ctx context.Context, resp map[string]interface{}, execErr error, app string, timerID uint, unix int64, execTime time.Time) error {
 	go w.reportMonitorData(app, unix, execTime)
-	_ = w.bloomFilter.Set(ctx, utils.GetTaskBloomFilterKeyByDay(utils.GetDayStr(time.Unix(unix, 0))), utils.UnionTimerIDUnix(timerID, unix), consts.BloomFilterKeyExpireSeconds)
+	_ = w.bloomFilter.Set(ctx, utils.GetTaskBloomFilterKey(utils.GetHourStr(time.Unix(unix, 0))), utils.UnionTimerIDUnix(timerID, unix), consts.BloomFilterKeyExpireSeconds)
 
 	task, err := w.taskDAO.GetTask(ctx, taskdao.WithTimerID(timerID), taskdao.WithRunTimer(time.Unix(unix, 0)))
 	if err != nil {

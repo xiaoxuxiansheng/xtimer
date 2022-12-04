@@ -56,7 +56,7 @@ func (t *TimerDAO) Count(ctx context.Context, opts ...Option) (int64, error) {
 		db = opt(db)
 	}
 	var cnt int64
-	return cnt, db.Count(&cnt).Error
+	return cnt, db.Debug().Count(&cnt).Error
 }
 
 func (t *TimerDAO) Transaction(ctx context.Context, do func(ctx context.Context, dao *TimerDAO) error) error {

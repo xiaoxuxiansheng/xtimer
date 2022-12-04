@@ -1,6 +1,8 @@
 package main
 
 import (
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"syscall"
@@ -20,6 +22,12 @@ func main() {
 
 	monitor.Start()
 	webServer.Start()
+
+	// 支持 pprof
+	go func() {
+		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {})
+		_ = http.ListenAndServe(":9999", nil)
+	}()
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT)

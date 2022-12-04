@@ -2,6 +2,7 @@ package executor
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/xiaoxuxiansheng/xtimer/common/conf"
@@ -10,9 +11,11 @@ import (
 	"github.com/xiaoxuxiansheng/xtimer/common/model/vo"
 	taskdao "github.com/xiaoxuxiansheng/xtimer/dao/task"
 	timerdao "github.com/xiaoxuxiansheng/xtimer/dao/timer"
+	"github.com/xiaoxuxiansheng/xtimer/pkg/log"
 )
 
 type TimerService struct {
+	sync.Once
 	confProvider *conf.MigratorAppConfProvider
 	ctx          context.Context
 	stop         func()
@@ -31,22 +34,28 @@ func NewTimerService(timerDAO *timerdao.TimerDAO, taskDAO *taskdao.TaskDAO, conf
 }
 
 func (t *TimerService) Start(ctx context.Context) {
-	t.ctx, t.stop = context.WithCancel(ctx)
+	t.Do(func() {
+		go func() {
+			t.ctx, t.stop = context.WithCancel(ctx)
 
-	stepMinutes := t.confProvider.Get().TimerDetailCacheMinutes
-	ticker := time.NewTicker(time.Duration(stepMinutes) * time.Minute)
-	defer ticker.Stop()
+			stepMinutes := t.confProvider.Get().TimerDetailCacheMinutes
+			ticker := time.NewTicker(time.Duration(stepMinutes) * time.Minute)
+			defer ticker.Stop()
 
-	for range ticker.C {
-		select {
-		case <-t.ctx.Done():
-			return
-		default:
-		}
+			for range ticker.C {
+				select {
+				case <-t.ctx.Done():
+					return
+				default:
+				}
 
-		start := time.Now()
-		t.timers, _ = t.getTimersByTime(ctx, start, start.Add(time.Duration(stepMinutes)*time.Minute))
-	}
+				go func() {
+					start := time.Now()
+					t.timers, _ = t.getTimersByTime(ctx, start, start.Add(time.Duration(stepMinutes)*time.Minute))
+				}()
+			}
+		}()
+	})
 }
 
 func (t *TimerService) getTimersByTime(ctx context.Context, start, end time.Time) (map[uint]*vo.Timer, error) {
@@ -97,8 +106,11 @@ func getTimersMap(pTimers []*po.Timer) (map[uint]*vo.Timer, error) {
 
 func (t *TimerService) GetTimer(ctx context.Context, id uint) (*vo.Timer, error) {
 	if vTimer, ok := t.timers[id]; ok {
+		// log.InfoContextf(ctx, "get timer from local cache success, timer: %+v", vTimer)
 		return vTimer, nil
 	}
+
+	log.WarnContextf(ctx, "get timer from local cache failed, timerID: %d", id)
 
 	timer, err := t.timerDAO.GetTimer(ctx, timerdao.WithID(id))
 	if err != nil {

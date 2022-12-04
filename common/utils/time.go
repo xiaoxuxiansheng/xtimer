@@ -14,6 +14,10 @@ func GetDayStr(t time.Time) string {
 	return t.Format(consts.DayFormat)
 }
 
+func GetHourStr(t time.Time) string {
+	return t.Format(consts.HourFormat)
+}
+
 func GetStartHour(t time.Time) time.Time {
 	return time.Date(t.Year(), t.Month(), t.Day(), t.Hour(), 0, 0, 0, time.Local)
 }

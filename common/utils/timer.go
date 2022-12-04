@@ -24,8 +24,8 @@ func SplitTimerIDUnix(str string) (uint, int64, error) {
 	return uint(timerID), unix, nil
 }
 
-func GetTaskBloomFilterKeyByDay(dayStr string) string {
-	return "task_bloom_" + dayStr
+func GetTaskBloomFilterKey(timeStr string) string {
+	return "task_bloom_" + timeStr
 }
 
 func GetTimeBucketLockKey(t time.Time, bucketID int) string {

@@ -75,9 +75,9 @@ var gConf GloablConf = GloablConf{
 	Redis: &RedisConfig{
 		Network: "tcp",
 		// 最大空闲连接数
-		MaxIdle: 500,
+		MaxIdle: 2000,
 		// 空闲连接超时时间，单位：s
-		IdleTimeoutSeconds: 30,
+		IdleTimeoutSeconds: 10,
 		// 连接池最大存活的连接数
 		MaxActive: 5000,
 		// 当连接数达到上限时，新的请求是等待还是立即报错
