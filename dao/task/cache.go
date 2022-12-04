@@ -121,7 +121,7 @@ func (t *TaskCache) GetTableName(task *po.Task, minuteBuckets []*vo.MinuteBucket
 		}
 	}
 
-	return fmt.Sprintf("%s_%d", task.RunTimer.Format(consts.MinuteFormat), bucket)
+	return fmt.Sprintf("%s_%d", task.RunTimer.Format(consts.MinuteFormat), task.RunTimer.Unix()%int64(bucket))
 }
 
 type cacheClient interface {

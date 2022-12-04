@@ -76,7 +76,7 @@ func (t *TimerService) EnableTimer(ctx context.Context, id uint) error {
 		// 取得批量的执行时机
 		// end 为下两个切片的右边界
 		start := time.Now()
-		end := utils.GetForwardTwoMigrateStepEnd(start, 3*time.Duration(t.migrateConfProvider.Get().MigrateStepMinutes)*time.Minute)
+		end := utils.GetForwardTwoMigrateStepEnd(start, 2*time.Duration(t.migrateConfProvider.Get().MigrateStepMinutes)*time.Minute)
 		executeTimes, err := t.cronParser.NextsBefore(timer.Cron, end)
 		if err != nil {
 			log.ErrorContextf(ctx, "get executeTimes failed, err: %v", err)
