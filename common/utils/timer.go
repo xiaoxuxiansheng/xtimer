@@ -28,6 +28,10 @@ func GetTaskBloomFilterKey(timeStr string) string {
 	return "task_bloom_" + timeStr
 }
 
+func GetBucketCntKey(key string) string {
+	return "bucket_cnt_" + key
+}
+
 func GetTimeBucketLockKey(t time.Time, bucketID int) string {
 	return fmt.Sprintf("time_bucket_lock_%s_%d", t.Format(consts.MinuteFormat), bucketID)
 }

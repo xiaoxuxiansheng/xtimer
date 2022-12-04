@@ -2,9 +2,11 @@ package scheduler
 
 import (
 	"context"
+	"strconv"
 	"time"
 
 	"github.com/xiaoxuxiansheng/xtimer/common/conf"
+	"github.com/xiaoxuxiansheng/xtimer/common/consts"
 	"github.com/xiaoxuxiansheng/xtimer/common/utils"
 	"github.com/xiaoxuxiansheng/xtimer/pkg/log"
 	"github.com/xiaoxuxiansheng/xtimer/pkg/pool"
@@ -17,13 +19,15 @@ type Worker struct {
 	appConfProvider appConfProvider
 	trigger         *trigger.Worker
 	lockService     lockService
+	bucketGetter    bucketGetter
 }
 
-func NewWorker(trigger *trigger.Worker, lockService *redis.Client, appConfProvider *conf.SchedulerAppConfProvider) *Worker {
+func NewWorker(trigger *trigger.Worker, redisClient *redis.Client, appConfProvider *conf.SchedulerAppConfProvider) *Worker {
 	return &Worker{
 		pool:            pool.NewGoWorkerPool(appConfProvider.Get().WorkersNum),
 		trigger:         trigger,
-		lockService:     lockService,
+		lockService:     redisClient,
+		bucketGetter:    redisClient,
 		appConfProvider: appConfProvider,
 	}
 }
@@ -48,9 +52,29 @@ func (w *Worker) Start(ctx context.Context) error {
 }
 
 func (w *Worker) handleSlices(ctx context.Context) {
-	for i := 0; i < w.appConfProvider.Get().BucketsNum; i++ {
+	for i := 0; i < w.getValidBucket(ctx); i++ {
 		w.handleSlice(ctx, i)
 	}
+}
+
+func (w *Worker) getValidBucket(ctx context.Context) int {
+	bucket := w.appConfProvider.Get().BucketsNum
+	bucketKey := utils.GetBucketCntKey(time.Now().Format(consts.MinuteFormat))
+	res, err := w.bucketGetter.Get(ctx, bucketKey)
+	if err != nil {
+		// log.ErrorContextf(ctx, "[scheduler] get bucket failed, key: %s, err:%v", bucketKey, err)
+		return bucket
+	}
+
+	_bucket, err := strconv.Atoi(res)
+	if err != nil {
+		log.ErrorContextf(ctx, "[scheduler] get invalid bucket, key: %s, got:%v", bucketKey, res)
+		return bucket
+	}
+
+	log.InfoContextf(ctx, "[scheduler] get valid bucket success, bucket: %d, cur: %v", _bucket, time.Now())
+
+	return _bucket
 }
 
 func (w *Worker) handleSlice(ctx context.Context, bucketID int) {
@@ -100,4 +124,8 @@ type appConfProvider interface {
 
 type lockService interface {
 	GetDistributionLock(key string) redis.DistributeLocker
+}
+
+type bucketGetter interface {
+	Get(ctx context.Context, key string) (string, error)
 }

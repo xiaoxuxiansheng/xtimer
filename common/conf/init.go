@@ -84,7 +84,7 @@ var gConf GloablConf = GloablConf{
 		Wait: true,
 	},
 	Mysql: &MySQLConfig{
-		MaxOpenConns: 151,
+		MaxOpenConns: 100,
 		MaxIdleConns: 50,
 	},
 }

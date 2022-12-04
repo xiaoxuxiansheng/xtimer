@@ -75,8 +75,9 @@ func (t *TimerService) EnableTimer(ctx context.Context, id uint) error {
 
 		// 取得批量的执行时机
 		// end 为下两个切片的右边界
-		executeTimes, err := t.cronParser.NextsBefore(timer.Cron,
-			utils.GetForwardTwoMigrateStepEnd(time.Now(), 3*time.Duration(t.migrateConfProvider.Get().MigrateStepMinutes)*time.Minute))
+		start := time.Now()
+		end := utils.GetForwardTwoMigrateStepEnd(start, 3*time.Duration(t.migrateConfProvider.Get().MigrateStepMinutes)*time.Minute)
+		executeTimes, err := t.cronParser.NextsBefore(timer.Cron, end)
 		if err != nil {
 			log.ErrorContextf(ctx, "get executeTimes failed, err: %v", err)
 			return err
@@ -90,7 +91,7 @@ func (t *TimerService) EnableTimer(ctx context.Context, id uint) error {
 		}
 
 		// 执行时机加入 redis 跳表
-		if err := t.taskCache.BatchCreateTasks(ctx, tasks); err != nil {
+		if err := t.taskCache.BatchCreateTasks(ctx, tasks, start, end); err != nil {
 			return err
 		}
 
@@ -157,7 +158,7 @@ type confProvider interface {
 }
 
 type taskCache interface {
-	BatchCreateTasks(ctx context.Context, tasks []*po.Task) error
+	BatchCreateTasks(ctx context.Context, tasks []*po.Task, start, end time.Time) error
 }
 
 type cronParser interface {

@@ -2,6 +2,7 @@ package task
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/xiaoxuxiansheng/xtimer/common/model/po"
 	"github.com/xiaoxuxiansheng/xtimer/pkg/mysql"
@@ -48,4 +49,11 @@ func (t *TaskDAO) Count(ctx context.Context, opts ...Option) (int64, error) {
 	}
 	var cnt int64
 	return cnt, db.Count(&cnt).Error
+}
+
+func (t *TaskDAO) CountGroupByMinute(ctx context.Context, startTimeStr, endTimeStr string) ([]*po.MinuteTaskCnt, error) {
+	_sql := fmt.Sprintf(SQLGetMinuteTaskCnt, startTimeStr, endTimeStr)
+
+	var res []*po.MinuteTaskCnt
+	return res, t.client.DB.Raw(_sql).Scan(&res).Error
 }

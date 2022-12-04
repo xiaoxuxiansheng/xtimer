@@ -229,6 +229,13 @@ func (c *Client) Expire(ctx context.Context, key string, expireSeconds int64) er
 	return err
 }
 
+func NewSetCommand(args ...interface{}) *Command {
+	return &Command{
+		Name: "SET",
+		Args: args,
+	}
+}
+
 func NewZAddCommand(args ...interface{}) *Command {
 	return &Command{
 		Name: "ZADD",
@@ -294,6 +301,26 @@ func (c *Client) GetBit(ctx context.Context, key string, offset int32) (bool, er
 
 	reply, err := redis.Int(conn.Do("GETBIT", key, offset, 1))
 	return reply == 1, err
+}
+
+// MGet 执行 Redis MGET 命令.
+func (c *Client) MGet(ctx context.Context, keys ...string) ([]string, error) {
+	// redigo 对为 nil 或 empty 的参数报错信息很模糊，因此手动添加错误信息
+	if len(keys) == 0 {
+		return nil, errors.New("redis MSET args can't be nil or empty")
+	}
+
+	conn, err := c.pool.GetContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
+	args := make([]interface{}, len(keys))
+	for i := range keys {
+		args[i] = keys[i]
+	}
+	return redis.Strings(conn.Do("MGET", args...))
 }
 
 func (c *Client) GetDistributionLock(key string) DistributeLocker {

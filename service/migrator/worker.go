@@ -95,12 +95,31 @@ func (w *Worker) migrate(ctx context.Context) error {
 	}
 
 	wg.Wait()
-	log.InfoContext(ctx, "migrator batch create db tasks susccess")
-	// 迁移完成后，将所有添加的 task 取出，添加到 redis 当中
-	tasks, err := w.taskDAO.GetTasks(ctx, taskdao.WithStartTime(start), taskdao.WithEndTime(end))
+	if err := w.batchCreateBucket(ctx, start, end); err != nil {
+		log.ErrorContextf(ctx, "batch create bucket failed, start: %v", start)
+		return err
+	}
+
+	// log.InfoContext(ctx, "migrator batch create db tasks susccess")
+	return w.migrateToCache(ctx, start, end)
+}
+
+func (w *Worker) batchCreateBucket(ctx context.Context, start, end time.Time) error {
+	cntByMins, err := w.taskDAO.CountGroupByMinute(ctx, start.Format(consts.SecondFormat), end.Format(consts.SecondFormat))
 	if err != nil {
 		return err
 	}
-	log.InfoContext(ctx, "migrator batch get tasks susccess")
-	return w.taskCache.BatchCreateTasks(ctx, tasks)
+
+	return w.taskCache.BatchCreateBucket(ctx, cntByMins, end)
+}
+
+func (w *Worker) migrateToCache(ctx context.Context, start, end time.Time) error {
+	// 迁移完成后，将所有添加的 task 取出，添加到 redis 当中
+	tasks, err := w.taskDAO.GetTasks(ctx, taskdao.WithStartTime(start), taskdao.WithEndTime(end))
+	if err != nil {
+		log.ErrorContextf(ctx, "migrator batch get tasks failed, err: %v", err)
+		return err
+	}
+	// log.InfoContext(ctx, "migrator batch get tasks susccess")
+	return w.taskCache.BatchCreateTasks(ctx, tasks, start, end)
 }

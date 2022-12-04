@@ -129,3 +129,8 @@ func (t *Timer) ToPO() (*po.Timer, error) {
 	}
 	return &timer, nil
 }
+
+type MinuteBucket struct {
+	Minute string
+	Bucket int
+}
