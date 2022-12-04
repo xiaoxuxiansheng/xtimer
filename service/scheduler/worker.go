@@ -20,6 +20,7 @@ type Worker struct {
 	trigger         *trigger.Worker
 	lockService     lockService
 	bucketGetter    bucketGetter
+	minuteBuckets   map[string]int
 }
 
 func NewWorker(trigger *trigger.Worker, redisClient *redis.Client, appConfProvider *conf.SchedulerAppConfProvider) *Worker {
@@ -29,6 +30,7 @@ func NewWorker(trigger *trigger.Worker, redisClient *redis.Client, appConfProvid
 		lockService:     redisClient,
 		bucketGetter:    redisClient,
 		appConfProvider: appConfProvider,
+		minuteBuckets:   make(map[string]int),
 	}
 }
 
@@ -58,8 +60,23 @@ func (w *Worker) handleSlices(ctx context.Context) {
 }
 
 func (w *Worker) getValidBucket(ctx context.Context) int {
-	bucket := w.appConfProvider.Get().BucketsNum
-	bucketKey := utils.GetBucketCntKey(time.Now().Format(consts.MinuteFormat))
+	now := time.Now()
+	// 删除上一分钟的数据
+	delete(w.minuteBuckets, now.Add(-time.Minute).Format(consts.MinuteFormat))
+
+	// 复用一分钟内的数据
+	bucket, ok := w.minuteBuckets[now.Format(consts.MinuteFormat)]
+	if ok {
+		return bucket
+	}
+
+	// 更新入map进行复用
+	defer func() {
+		w.minuteBuckets[now.Format(consts.MinuteFormat)] = bucket
+	}()
+
+	bucket = w.appConfProvider.Get().BucketsNum
+	bucketKey := utils.GetBucketCntKey(now.Format(consts.MinuteFormat))
 	res, err := w.bucketGetter.Get(ctx, bucketKey)
 	if err != nil {
 		// log.ErrorContextf(ctx, "[scheduler] get bucket failed, key: %s, err:%v", bucketKey, err)
@@ -72,9 +89,10 @@ func (w *Worker) getValidBucket(ctx context.Context) int {
 		return bucket
 	}
 
+	bucket = _bucket
 	log.InfoContextf(ctx, "[scheduler] get valid bucket success, bucket: %d, cur: %v", _bucket, time.Now())
 
-	return _bucket
+	return bucket
 }
 
 func (w *Worker) handleSlice(ctx context.Context, bucketID int) {
