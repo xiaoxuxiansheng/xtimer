@@ -25,12 +25,12 @@
 <a href="https://juejin.cn/post/7174007780104208392">xTimer 实现原理</a> <br/><br/>
 <a href="https://juejin.cn/post/7116320697139331103">xTimer 前身 workflow.timer 实现原理</a>
 
-## 🖥 接入指引
-1 用户需要提供好 mysql 和 redis 组件；
-2 在 mysql 中执行 ./common/model/sql 下的建表语句；
-3 ./conf.yml 中填写 mysql dsn 以及 redis 账号密码
-4 运行 main 函数
+## 🖥 接入 sop
+1 用户需要提供好 mysql 和 redis 组件；<br/><br/>
+2 在 mysql 中执行 ./common/model/sql 下的建表语句；<br/><br/>
+3 ./conf.yml 中填写 mysql dsn 以及 redis 账号密码；<br/><br/>
+4 运行 main 函数. <br/><br/>
 
-
-
+## 📊 定制参数
+在 ./conf.yml 中暴露了更多的参数供用户自主选择定义，这部分均配置默认值兜底,用户如需修改,请先了解技术原理,在熟悉源代码的 基础上可自行调节
 
