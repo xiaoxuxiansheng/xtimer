@@ -5,8 +5,7 @@
 </p>
 
 ## 📚 前言
-xtimer 核心思路由 zhujingyue 老板贡献<br>
-个人仅以此项目怀念和栋哥、欢哥、康总在前公司共同奋斗的岁月~（还有跟着 devin 学习的日子）<br/><br/>
+仅以此项目怀念和栋哥、欢哥、康总在前公司共同奋斗的岁月~（还有跟着 devin 学习的日子）<br/><br/>
 <img src="https://github.com/xiaoxuxiansheng/xtimer/blob/main/common/img/hezhao.jpeg" height="300px"/>
 
 ## 📖 简介
@@ -17,7 +16,18 @@ xtimer 核心思路由 zhujingyue 老板贡献<br>
 - 基于 cron 表达式定义执行规则
 - 支持 http 协议回调下游服务
 
+## 🐧 体验页面
+<a href="http://43.143.168.5:5173/login">前端体验页面</a> <br/><br/>
+登录账号：test
+登录密码：test
+
 ## 💡 `xTimer` 技术原理
 <a href="https://juejin.cn/post/7174007780104208392">xTimer 实现原理</a> <br/><br/>
 <a href="https://juejin.cn/post/7116320697139331103">xTimer 前身 workflow.timer 实现原理</a>
+
+## 🖥 接入指引
+- 1 用户需要提供好 mysql 和 redis 组件；
+
+
+
 
