@@ -26,7 +26,10 @@
 <a href="https://juejin.cn/post/7116320697139331103">xTimer 前身 workflow.timer 实现原理</a>
 
 ## 🖥 接入指引
-- 1 用户需要提供好 mysql 和 redis 组件；
+1 用户需要提供好 mysql 和 redis 组件；
+2 在 mysql 中执行 ./common/model/sql 下的建表语句；
+3 ./conf.yml 中填写 mysql dsn 以及 redis 账号密码
+4 运行 main 函数
 
 
 
