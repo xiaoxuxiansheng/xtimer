@@ -5,7 +5,7 @@ xtimer 核心思路源自：zhujingyue 老板贡献~<br>
 
 
 <p align="center">
-<img src="https://raw.githubusercontent.com/xiaoxuxiansheng/xtimer/main/common/img/xtimer.png" />
+<img src="https://github.com/xiaoxuxiansheng/xtimer/blob/main/common/img/xtimer.png" />
 <b>xTimer: go 语言实现的定时器</b>
 <br/><br/>
 </p>
