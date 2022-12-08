@@ -32,23 +32,23 @@ func NewJSONClient(opts ...Option) *JSONClient {
 	return &j
 }
 
-func (j *JSONClient) Get(ctx context.Context, url string, header http.Header, params map[string]string, resp interface{}) error {
+func (j *JSONClient) Get(ctx context.Context, url string, header map[string]string, params map[string]string, resp interface{}) error {
 	return j.Do(ctx, http.MethodGet, getCompleteURL(url, params), header, nil, resp)
 }
 
-func (j *JSONClient) Post(ctx context.Context, url string, header http.Header, req, resp interface{}) error {
+func (j *JSONClient) Post(ctx context.Context, url string, header map[string]string, req, resp interface{}) error {
 	return j.Do(ctx, http.MethodPost, url, header, req, resp)
 }
 
-func (j *JSONClient) Patch(ctx context.Context, url string, header http.Header, req, resp interface{}) error {
+func (j *JSONClient) Patch(ctx context.Context, url string, header map[string]string, req, resp interface{}) error {
 	return j.Do(ctx, http.MethodPatch, url, header, req, resp)
 }
 
-func (j *JSONClient) Delete(ctx context.Context, url string, header http.Header, req, resp interface{}) error {
+func (j *JSONClient) Delete(ctx context.Context, url string, header map[string]string, req, resp interface{}) error {
 	return j.Do(ctx, http.MethodDelete, url, header, req, resp)
 }
 
-func (j *JSONClient) Do(ctx context.Context, method string, url string, header http.Header, req, resp interface{}) error {
+func (j *JSONClient) Do(ctx context.Context, method string, url string, header map[string]string, req, resp interface{}) error {
 	tCtx, cancel := context.WithTimeout(ctx, j.timeoutDuration)
 	defer cancel()
 
@@ -62,10 +62,8 @@ func (j *JSONClient) Do(ctx context.Context, method string, url string, header h
 		return err
 	}
 
-	for k, vs := range header {
-		for _, v := range vs {
-			request.Header.Add(k, v)
-		}
+	for k, v := range header {
+		request.Header.Add(k, v)
 	}
 
 	response, err := http.DefaultClient.Do(request)

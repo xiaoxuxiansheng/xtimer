@@ -3,7 +3,6 @@ package vo
 import (
 	"encoding/json"
 	"errors"
-	"net/http"
 
 	"github.com/xiaoxuxiansheng/xtimer/common/consts"
 	"github.com/xiaoxuxiansheng/xtimer/common/model/po"
@@ -66,10 +65,10 @@ type Timer struct {
 }
 
 type NotifyHTTPParam struct {
-	Method string      `json:"method,omitempty" binding:"required"` // POST,GET 方法
-	URL    string      `json:"url,omitempty" binding:"required"`    // URL 路径
-	Header http.Header `json:"header,omitempty"`                    // header 请求头
-	Body   string      `json:"body,omitempty"`                      // 请求参数体
+	Method string            `json:"method,omitempty" binding:"required"` // POST,GET 方法
+	URL    string            `json:"url,omitempty" binding:"required"`    // URL 路径
+	Header map[string]string `json:"header,omitempty"`                    // header 请求头
+	Body   string            `json:"body,omitempty"`                      // 请求参数体
 }
 
 func NewTimer(timer *po.Timer) (*Timer, error) {

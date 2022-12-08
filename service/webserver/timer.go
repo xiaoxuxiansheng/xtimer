@@ -2,6 +2,7 @@ package webserver
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"time"
@@ -16,7 +17,10 @@ import (
 	"github.com/xiaoxuxiansheng/xtimer/pkg/cron"
 	"github.com/xiaoxuxiansheng/xtimer/pkg/log"
 	"github.com/xiaoxuxiansheng/xtimer/pkg/mysql"
+	"github.com/xiaoxuxiansheng/xtimer/pkg/redis"
 )
+
+const defaultEnableGapSeconds = 3
 
 type TimerService struct {
 	dao                 timerDAO
@@ -24,9 +28,10 @@ type TimerService struct {
 	migrateConfProvider *conf.MigratorAppConfProvider
 	cronParser          cronParser
 	taskCache           taskCache
+	lockService         *redis.Client
 }
 
-func NewTimerService(dao *timerdao.TimerDAO, taskCache *taskdao.TaskCache,
+func NewTimerService(dao *timerdao.TimerDAO, taskCache *taskdao.TaskCache, lockService *redis.Client,
 	confProvider *conf.WebServerAppConfProvider, migrateConfProvider *conf.MigratorAppConfProvider, parser *cron.CronParser) *TimerService {
 	return &TimerService{
 		dao:                 dao,
@@ -34,10 +39,16 @@ func NewTimerService(dao *timerdao.TimerDAO, taskCache *taskdao.TaskCache,
 		migrateConfProvider: migrateConfProvider,
 		taskCache:           taskCache,
 		cronParser:          parser,
+		lockService:         lockService,
 	}
 }
 
 func (t *TimerService) CreateTimer(ctx context.Context, timer *vo.Timer) (uint, error) {
+	// 校验 cron 表达式
+	if !t.cronParser.IsValidCronExpr(timer.Cron) {
+		return 0, fmt.Errorf("非法的 cron 表达式: %s", timer.Cron)
+	}
+
 	pTimer, err := timer.ToPO()
 	if err != nil {
 		return 0, err
@@ -67,6 +78,12 @@ func (t *TimerService) GetTimer(ctx context.Context, id uint) (*vo.Timer, error)
 }
 
 func (t *TimerService) EnableTimer(ctx context.Context, id uint) error {
+	// 限制激活和去激活频次
+	lock := t.lockService.GetDistributionLock(utils.GetEnableLockKey(id))
+	if err := lock.Lock(ctx, defaultEnableGapSeconds); err != nil {
+		return errors.New("激活/去激活操作过于频繁，请稍后再试！")
+	}
+
 	do := func(ctx context.Context, dao *timerdao.TimerDAO, timer *po.Timer) error {
 		// 状态校验
 		if timer.Status != consts.Unabled.ToInt() {
@@ -104,6 +121,12 @@ func (t *TimerService) EnableTimer(ctx context.Context, id uint) error {
 }
 
 func (t *TimerService) UnableTimer(ctx context.Context, id uint) error {
+	// 限制激活和去激活频次
+	lock := t.lockService.GetDistributionLock(utils.GetEnableLockKey(id))
+	if err := lock.Lock(ctx, defaultEnableGapSeconds); err != nil {
+		return errors.New("激活/去激活操作过于频繁，请稍后再试！")
+	}
+
 	do := func(ctx context.Context, dao *timerdao.TimerDAO, timer *po.Timer) error {
 		// 状态校验
 		if timer.Status != consts.Enabled.ToInt() {
@@ -163,4 +186,5 @@ type taskCache interface {
 
 type cronParser interface {
 	NextsBefore(cron string, end time.Time) ([]time.Time, error)
+	IsValidCronExpr(cron string) bool
 }

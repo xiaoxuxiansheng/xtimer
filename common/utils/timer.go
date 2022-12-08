@@ -48,6 +48,10 @@ func GetSliceMsgKey(t time.Time, bucketID int) string {
 	return fmt.Sprintf("%s_%d", t.Format(consts.MinuteFormat), bucketID)
 }
 
+func GetEnableLockKey(timerID uint) string {
+	return fmt.Sprintf("enable_timer_lock_%d", timerID)
+}
+
 func SplitTimeBucket(key string) (time.Time, int, error) {
 	timerBucket := strings.Split(key, "_")
 	if len(timerBucket) != 2 {

@@ -14,6 +14,11 @@ func NewCronParser() *CronParser {
 	return &CronParser{}
 }
 
+func (c *CronParser) IsValidCronExpr(cron string) bool {
+	_, err := cronexpr.Parse(cron)
+	return err == nil
+}
+
 func (c *CronParser) NextFromNow(cron string) (time.Time, error) {
 	expr, err := cronexpr.Parse(cron)
 	if err != nil {
