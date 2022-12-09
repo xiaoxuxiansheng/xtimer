@@ -45,8 +45,8 @@ func (f *Filter) Set(ctx context.Context, key, val string, expireSeconds int64) 
 
 	// 算出两个 hash 函数对应的 offset，分别进行 set 动作
 	rawVal1, rawVal2 := f.encryptor1.Encrypt(val), f.encryptor2.Encrypt(val)
-	_, err := f.client.Transaction(ctx, redis.NewSetBitCommand(key, int32(rawVal1%math.MaxInt32)),
-		redis.NewSetBitCommand(key, int32(rawVal2%math.MaxInt32)))
+	_, err := f.client.Transaction(ctx, redis.NewSetBitCommand(key, int32(rawVal1%math.MaxInt32), 1),
+		redis.NewSetBitCommand(key, int32(rawVal2%math.MaxInt32), 1))
 
 	if !existed {
 		_ = f.client.Expire(ctx, key, expireSeconds)

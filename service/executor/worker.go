@@ -51,8 +51,8 @@ func (w *Worker) Work(ctx context.Context, timerIDUnixKey string) error {
 		return err
 	}
 
-	if exist, err := w.bloomFilter.Exist(ctx, utils.GetTaskBloomFilterKey(utils.GetHourStr(time.Unix(unix, 0))), timerIDUnixKey); err != nil || exist {
-		log.WarnContextf(ctx, "bloom filter check failed, start to check db, bloom key: %s, timerIDUnixKey: %s, err: %v, exist: %t", utils.GetTaskBloomFilterKey(utils.GetHourStr(time.Unix(unix, 0))), timerIDUnixKey, err, exist)
+	if exist, err := w.bloomFilter.Exist(ctx, utils.GetTaskBloomFilterKey(utils.GetMinuteStr(time.Unix(unix, 0))), timerIDUnixKey); err != nil || exist {
+		log.WarnContextf(ctx, "bloom filter check failed, start to check db, bloom key: %s, timerIDUnixKey: %s, err: %v, exist: %t", utils.GetTaskBloomFilterKey(utils.GetMinuteStr(time.Unix(unix, 0))), timerIDUnixKey, err, exist)
 		// 查库判断定时器状态
 		task, err := w.taskDAO.GetTask(ctx, taskdao.WithTimerID(timerID), taskdao.WithRunTimer(time.Unix(unix, 0)))
 		if err == nil && task.Status != consts.NotRunned.ToInt() {
@@ -69,7 +69,7 @@ func (w *Worker) executeAndPostProcess(ctx context.Context, timerID uint, unix i
 	// 未执行，则查询 timer 完整的定义，执行回调
 	timer, err := w.timerService.GetTimer(ctx, timerID)
 	if err != nil {
-		return err
+		return fmt.Errorf("get timer failed, id: %d, err: %w", timerID, err)
 	}
 
 	// 定时器已经处于去激活态，则无需处理任务
@@ -107,13 +107,13 @@ func (w *Worker) execute(ctx context.Context, timer *vo.Timer) (map[string]inter
 
 func (w *Worker) postProcess(ctx context.Context, resp map[string]interface{}, execErr error, app string, timerID uint, unix int64, execTime time.Time) error {
 	go w.reportMonitorData(app, unix, execTime)
-	if err := w.bloomFilter.Set(ctx, utils.GetTaskBloomFilterKey(utils.GetHourStr(time.Unix(unix, 0))), utils.UnionTimerIDUnix(timerID, unix), consts.BloomFilterKeyExpireSeconds); err != nil {
-		log.ErrorContextf(ctx, "set bloom filter failed, key: %s, err: %v", utils.GetTaskBloomFilterKey(utils.GetHourStr(time.Unix(unix, 0))), err)
+	if err := w.bloomFilter.Set(ctx, utils.GetTaskBloomFilterKey(utils.GetMinuteStr(time.Unix(unix, 0))), utils.UnionTimerIDUnix(timerID, unix), consts.BloomFilterKeyExpireSeconds); err != nil {
+		log.ErrorContextf(ctx, "set bloom filter failed, key: %s, err: %v", utils.GetTaskBloomFilterKey(utils.GetMinuteStr(time.Unix(unix, 0))), err)
 	}
 
 	task, err := w.taskDAO.GetTask(ctx, taskdao.WithTimerID(timerID), taskdao.WithRunTimer(time.Unix(unix, 0)))
 	if err != nil {
-		return err
+		return fmt.Errorf("get task failed, timerID: %d, runTimer: %d, err: %w", timerID, time.Unix(unix, 0), err)
 	}
 
 	respBody, _ := json.Marshal(resp)

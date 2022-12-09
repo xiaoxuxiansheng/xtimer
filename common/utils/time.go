@@ -18,6 +18,10 @@ func GetHourStr(t time.Time) string {
 	return t.Format(consts.HourFormat)
 }
 
+func GetMinuteStr(t time.Time) string {
+	return t.Format(consts.MinuteFormat)
+}
+
 func GetStartHour(t time.Time) time.Time {
 	return time.Date(t.Year(), t.Month(), t.Day(), t.Hour(), 0, 0, 0, time.Local)
 }

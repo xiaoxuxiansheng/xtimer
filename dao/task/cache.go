@@ -30,7 +30,7 @@ func (t *TaskCache) BatchCreateBucket(ctx context.Context, cntByMins []*po.Minut
 	expireSeconds := int64(time.Until(end) / time.Second)
 	commands := make([]*redis.Command, 0, 2*len(cntByMins))
 	for _, detail := range cntByMins {
-		commands = append(commands, redis.NewSetCommand(utils.GetBucketCntKey(detail.Minute), detail, conf.BucketsNum+int(detail.Cnt)/200))
+		commands = append(commands, redis.NewSetCommand(utils.GetBucketCntKey(detail.Minute), conf.BucketsNum+int(detail.Cnt)/200))
 		commands = append(commands, redis.NewExpireCommand(utils.GetBucketCntKey(detail.Minute), expireSeconds))
 	}
 
