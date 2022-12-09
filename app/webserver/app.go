@@ -2,6 +2,7 @@ package webserver
 
 import (
 	"fmt"
+	"net/http"
 	"sync"
 
 	"github.com/gin-gonic/gin"
@@ -20,6 +21,7 @@ type Server struct {
 
 	timerRouter *gin.RouterGroup
 	taskRouter  *gin.RouterGroup
+	mockRouter  *gin.RouterGroup
 
 	confProvider *conf.WebServerAppConfProvider
 }
@@ -36,7 +38,9 @@ func NewServer(timer *TimerApp, task *TaskApp, confProvider *conf.WebServerAppCo
 
 	s.timerRouter = s.engine.Group("api/timer/v1")
 	s.taskRouter = s.engine.Group("api/task/v1")
+	s.mockRouter = s.engine.Group("api/mock/v1")
 	s.RegisterBaseRouter()
+	s.RegisterMockRouter()
 	s.RegisterTimerRouter()
 	s.RegisterTaskRouter()
 	s.RegisterMonitorRouter()
@@ -74,6 +78,16 @@ func (s *Server) RegisterTimerRouter() {
 
 func (s *Server) RegisterTaskRouter() {
 	s.taskRouter.GET("/records", s.taskApp.GetTasks)
+}
+
+func (s *Server) RegisterMockRouter() {
+	s.mockRouter.Any("/mock", func(ctx *gin.Context) {
+		ctx.JSON(http.StatusOK, struct {
+			Word string `json:"word"`
+		}{
+			Word: "hello world!",
+		})
+	})
 }
 
 func (s *Server) RegisterMonitorRouter() {
