@@ -79,7 +79,7 @@ func (w *Worker) getValidBucket(ctx context.Context) int {
 	bucketKey := utils.GetBucketCntKey(now.Format(consts.MinuteFormat))
 	res, err := w.bucketGetter.Get(ctx, bucketKey)
 	if err != nil {
-		// log.ErrorContextf(ctx, "[scheduler] get bucket failed, key: %s, err:%v", bucketKey, err)
+		log.ErrorContextf(ctx, "[scheduler] get bucket failed, key: %s, err:%v", bucketKey, err)
 		return bucket
 	}
 

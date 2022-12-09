@@ -299,7 +299,7 @@ func (c *Client) GetBit(ctx context.Context, key string, offset int32) (bool, er
 	}
 	defer conn.Close()
 
-	reply, err := redis.Int(conn.Do("GETBIT", key, offset, 1))
+	reply, err := redis.Int(conn.Do("GETBIT", key, offset))
 	return reply == 1, err
 }
 

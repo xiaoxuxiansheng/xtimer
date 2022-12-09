@@ -77,9 +77,9 @@ var gConf GloablConf = GloablConf{
 		// 最大空闲连接数
 		MaxIdle: 2000,
 		// 空闲连接超时时间，单位：s
-		IdleTimeoutSeconds: 10,
+		IdleTimeoutSeconds: 30,
 		// 连接池最大存活的连接数
-		MaxActive: 5000,
+		MaxActive: 1000,
 		// 当连接数达到上限时，新的请求是等待还是立即报错
 		Wait: true,
 	},

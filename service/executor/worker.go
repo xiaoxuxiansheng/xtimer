@@ -52,6 +52,7 @@ func (w *Worker) Work(ctx context.Context, timerIDUnixKey string) error {
 	}
 
 	if exist, err := w.bloomFilter.Exist(ctx, utils.GetTaskBloomFilterKey(utils.GetHourStr(time.Unix(unix, 0))), timerIDUnixKey); err != nil || exist {
+		log.WarnContextf(ctx, "bloom filter check failed, start to check db, bloom key: %s, timerIDUnixKey: %s, err: %v, exist: %t", utils.GetTaskBloomFilterKey(utils.GetHourStr(time.Unix(unix, 0))), timerIDUnixKey, err, exist)
 		// 查库判断定时器状态
 		task, err := w.taskDAO.GetTask(ctx, taskdao.WithTimerID(timerID), taskdao.WithRunTimer(time.Unix(unix, 0)))
 		if err == nil && task.Status != consts.NotRunned.ToInt() {
@@ -106,7 +107,9 @@ func (w *Worker) execute(ctx context.Context, timer *vo.Timer) (map[string]inter
 
 func (w *Worker) postProcess(ctx context.Context, resp map[string]interface{}, execErr error, app string, timerID uint, unix int64, execTime time.Time) error {
 	go w.reportMonitorData(app, unix, execTime)
-	_ = w.bloomFilter.Set(ctx, utils.GetTaskBloomFilterKey(utils.GetHourStr(time.Unix(unix, 0))), utils.UnionTimerIDUnix(timerID, unix), consts.BloomFilterKeyExpireSeconds)
+	if err := w.bloomFilter.Set(ctx, utils.GetTaskBloomFilterKey(utils.GetHourStr(time.Unix(unix, 0))), utils.UnionTimerIDUnix(timerID, unix), consts.BloomFilterKeyExpireSeconds); err != nil {
+		log.ErrorContextf(ctx, "set bloom filter failed, key: %s, err: %v", utils.GetTaskBloomFilterKey(utils.GetHourStr(time.Unix(unix, 0))), err)
+	}
 
 	task, err := w.taskDAO.GetTask(ctx, taskdao.WithTimerID(timerID), taskdao.WithRunTimer(time.Unix(unix, 0)))
 	if err != nil {
