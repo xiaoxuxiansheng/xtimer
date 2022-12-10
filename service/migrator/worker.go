@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"sync"
 	"time"
 
 	mconf "github.com/xiaoxuxiansheng/xtimer/common/conf"
@@ -75,26 +74,17 @@ func (w *Worker) migrate(ctx context.Context) error {
 	}
 
 	conf := w.appConfigProvider.Get()
-	var wg sync.WaitGroup
 	now := time.Now()
 	start, end := utils.GetStartHour(now.Add(time.Duration(conf.MigrateStepMinutes)*time.Minute)), utils.GetStartHour(now.Add(2*time.Duration(conf.MigrateStepMinutes)*time.Minute))
+	// 迁移可以慢慢来，不着急
 	for _, timer := range timers {
-		// shadow
-		timer := timer
-		wg.Add(1)
-		if err := w.pool.Submit(func() {
-			defer wg.Done()
-			nexts, _ := w.cronParser.NextsBetween(timer.Cron, start, end)
-			if err := w.timerDAO.BatchCreateRecords(ctx, timer.BatchTasksFromTimer(nexts)); err != nil {
-				log.ErrorContextf(ctx, "migrator batch create records for timer: %d failed, err: %v", timer.ID, err)
-			}
-		}); err != nil {
-			log.ErrorContextf(ctx, "migrator submit task failed, err: %v", err)
-			wg.Done()
+		nexts, _ := w.cronParser.NextsBetween(timer.Cron, start, end)
+		if err := w.timerDAO.BatchCreateRecords(ctx, timer.BatchTasksFromTimer(nexts)); err != nil {
+			log.ErrorContextf(ctx, "migrator batch create records for timer: %d failed, err: %v", timer.ID, err)
 		}
+		time.Sleep(5 * time.Second)
 	}
 
-	wg.Wait()
 	// if err := w.batchCreateBucket(ctx, start, end); err != nil {
 	// 	log.ErrorContextf(ctx, "batch create bucket failed, start: %v", start)
 	// 	return err

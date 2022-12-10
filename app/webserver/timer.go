@@ -70,7 +70,7 @@ func (t *TimerApp) DeleteTimer(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, vo.NewCodeMsgWithErr(t.service.DeleteTimer(c.Request.Context(), req.ID)))
+	c.JSON(http.StatusOK, vo.NewCodeMsgWithErr(t.service.DeleteTimer(c.Request.Context(), req.App, req.ID)))
 }
 
 func (t *TimerApp) UpdateTimer(c *gin.Context) {
@@ -104,7 +104,7 @@ func (t *TimerApp) EnableTimer(c *gin.Context) {
 		return
 	}
 
-	if err := t.service.EnableTimer(c.Request.Context(), req.ID); err != nil {
+	if err := t.service.EnableTimer(c.Request.Context(), req.App, req.ID); err != nil {
 		c.JSON(http.StatusOK, vo.NewCodeMsg(-1, err.Error()))
 		return
 	}
@@ -127,15 +127,15 @@ func (t *TimerApp) UnableTimer(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, vo.NewCodeMsgWithErr(t.service.UnableTimer(c.Request.Context(), req.ID)))
+	c.JSON(http.StatusOK, vo.NewCodeMsgWithErr(t.service.UnableTimer(c.Request.Context(), req.App, req.ID)))
 }
 
 type timerService interface {
 	CreateTimer(ctx context.Context, timer *vo.Timer) (uint, error)
-	DeleteTimer(ctx context.Context, id uint) error
+	DeleteTimer(ctx context.Context, app string, id uint) error
 	UpdateTimer(ctx context.Context, timer *vo.Timer) error
 	GetTimer(ctx context.Context, id uint) (*vo.Timer, error)
-	EnableTimer(ctx context.Context, id uint) error
-	UnableTimer(ctx context.Context, id uint) error
+	EnableTimer(ctx context.Context, app string, id uint) error
+	UnableTimer(ctx context.Context, app string, id uint) error
 	GetAppTimers(ctx context.Context, req *vo.GetAppTimersReq) ([]*vo.Timer, int64, error)
 }

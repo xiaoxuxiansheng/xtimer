@@ -51,10 +51,10 @@ func (w *Worker) Work(ctx context.Context, timerIDUnixKey string) error {
 		return err
 	}
 
-	if exist, err := w.bloomFilter.Exist(ctx, utils.GetTaskBloomFilterKey(utils.GetMinuteStr(time.Unix(unix, 0))), timerIDUnixKey); err != nil || exist {
-		log.WarnContextf(ctx, "bloom filter check failed, start to check db, bloom key: %s, timerIDUnixKey: %s, err: %v, exist: %t", utils.GetTaskBloomFilterKey(utils.GetMinuteStr(time.Unix(unix, 0))), timerIDUnixKey, err, exist)
+	if exist, err := w.bloomFilter.Exist(ctx, utils.GetTaskBloomFilterKey(utils.GetDayStr(time.UnixMilli(unix))), timerIDUnixKey); err != nil || exist {
+		log.WarnContextf(ctx, "bloom filter check failed, start to check db, bloom key: %s, timerIDUnixKey: %s, err: %v, exist: %t", utils.GetTaskBloomFilterKey(utils.GetDayStr(time.UnixMilli(unix))), timerIDUnixKey, err, exist)
 		// 查库判断定时器状态
-		task, err := w.taskDAO.GetTask(ctx, taskdao.WithTimerID(timerID), taskdao.WithRunTimer(time.Unix(unix, 0)))
+		task, err := w.taskDAO.GetTask(ctx, taskdao.WithTimerID(timerID), taskdao.WithRunTimer(time.UnixMilli(unix)))
 		if err == nil && task.Status != consts.NotRunned.ToInt() {
 			// 重复执行的任务
 			log.WarnContextf(ctx, "task is already executed, timerID: %d, exec_time: %v", timerID, task.RunTimer)
@@ -107,13 +107,13 @@ func (w *Worker) execute(ctx context.Context, timer *vo.Timer) (map[string]inter
 
 func (w *Worker) postProcess(ctx context.Context, resp map[string]interface{}, execErr error, app string, timerID uint, unix int64, execTime time.Time) error {
 	go w.reportMonitorData(app, unix, execTime)
-	if err := w.bloomFilter.Set(ctx, utils.GetTaskBloomFilterKey(utils.GetMinuteStr(time.Unix(unix, 0))), utils.UnionTimerIDUnix(timerID, unix), consts.BloomFilterKeyExpireSeconds); err != nil {
-		log.ErrorContextf(ctx, "set bloom filter failed, key: %s, err: %v", utils.GetTaskBloomFilterKey(utils.GetMinuteStr(time.Unix(unix, 0))), err)
+	if err := w.bloomFilter.Set(ctx, utils.GetTaskBloomFilterKey(utils.GetDayStr(time.UnixMilli(unix))), utils.UnionTimerIDUnix(timerID, unix), consts.BloomFilterKeyExpireSeconds); err != nil {
+		log.ErrorContextf(ctx, "set bloom filter failed, key: %s, err: %v", utils.GetTaskBloomFilterKey(utils.GetDayStr(time.UnixMilli(unix))), err)
 	}
 
-	task, err := w.taskDAO.GetTask(ctx, taskdao.WithTimerID(timerID), taskdao.WithRunTimer(time.Unix(unix, 0)))
+	task, err := w.taskDAO.GetTask(ctx, taskdao.WithTimerID(timerID), taskdao.WithRunTimer(time.UnixMilli(unix)))
 	if err != nil {
-		return fmt.Errorf("get task failed, timerID: %d, runTimer: %d, err: %w", timerID, time.Unix(unix, 0), err)
+		return fmt.Errorf("get task failed, timerID: %d, runTimer: %d, err: %w", timerID, time.UnixMilli(unix), err)
 	}
 
 	respBody, _ := json.Marshal(resp)
@@ -131,5 +131,5 @@ func (w *Worker) postProcess(ctx context.Context, resp map[string]interface{}, e
 func (w *Worker) reportMonitorData(app string, expectExecTimeUnix int64, acutalExecTime time.Time) {
 	w.reporter.ReportExecRecord(app)
 	// 上报毫秒
-	w.reporter.ReportTimerDelayRecord(app, float64(acutalExecTime.UnixMilli()-expectExecTimeUnix*1000))
+	w.reporter.ReportTimerDelayRecord(app, float64(acutalExecTime.UnixMilli()-expectExecTimeUnix))
 }

@@ -40,7 +40,8 @@ func NewCreateTimerResp(id uint, codeMsg CodeMsg) *CreateTimerResp {
 }
 
 type TimerReq struct {
-	ID uint `form:"id" json:"id" binding:"required"`
+	App string `form:"app" json:"app" binding:"required"`
+	ID  uint   `form:"id" json:"id" binding:"required"`
 }
 
 type GetTimerResp struct {

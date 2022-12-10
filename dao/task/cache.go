@@ -78,7 +78,7 @@ func (t *TaskCache) BatchCreateTasks(ctx context.Context, tasks []*po.Task, star
 
 	commands := make([]*redis.Command, 0, 2*len(tasks))
 	for _, task := range tasks {
-		unix := task.RunTimer.Unix()
+		unix := task.RunTimer.UnixMilli()
 		tableName := t.GetTableName(task)
 		// tableName := t.GetTableName(task, minBuckets)
 		commands = append(commands, redis.NewZAddCommand(tableName, unix, utils.UnionTimerIDUnix(task.TimerID, unix)))
@@ -92,7 +92,7 @@ func (t *TaskCache) BatchCreateTasks(ctx context.Context, tasks []*po.Task, star
 }
 
 func (t *TaskCache) GetTasksByTime(ctx context.Context, table string, start, end int64) ([]*po.Task, error) {
-	timerIDUnixs, err := t.client.ZrangeByScore(ctx, table, start, end)
+	timerIDUnixs, err := t.client.ZrangeByScore(ctx, table, start, end-1)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +102,7 @@ func (t *TaskCache) GetTasksByTime(ctx context.Context, table string, start, end
 		timerID, unix, _ := utils.SplitTimerIDUnix(timerIDUnix)
 		tasks = append(tasks, &po.Task{
 			TimerID:  timerID,
-			RunTimer: time.Unix(unix, 0),
+			RunTimer: time.UnixMilli(unix),
 		})
 	}
 

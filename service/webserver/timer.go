@@ -44,6 +44,10 @@ func NewTimerService(dao *timerdao.TimerDAO, taskCache *taskdao.TaskCache, lockS
 }
 
 func (t *TimerService) CreateTimer(ctx context.Context, timer *vo.Timer) (uint, error) {
+	lock := t.lockService.GetDistributionLock(utils.GetCreateLockKey(timer.App))
+	if err := lock.Lock(ctx, defaultEnableGapSeconds); err != nil {
+		return 0, errors.New("创建/删除操作过于频繁，请稍后再试！")
+	}
 	// 校验 cron 表达式
 	if !t.cronParser.IsValidCronExpr(timer.Cron) {
 		return 0, fmt.Errorf("非法的 cron 表达式: %s", timer.Cron)
@@ -56,7 +60,11 @@ func (t *TimerService) CreateTimer(ctx context.Context, timer *vo.Timer) (uint, 
 	return t.dao.CreateTimer(ctx, pTimer)
 }
 
-func (t *TimerService) DeleteTimer(ctx context.Context, id uint) error {
+func (t *TimerService) DeleteTimer(ctx context.Context, app string, id uint) error {
+	lock := t.lockService.GetDistributionLock(utils.GetCreateLockKey(app))
+	if err := lock.Lock(ctx, defaultEnableGapSeconds); err != nil {
+		return errors.New("创建/删除操作过于频繁，请稍后再试！")
+	}
 	return t.dao.DeleteTimer(ctx, id)
 }
 
@@ -77,9 +85,9 @@ func (t *TimerService) GetTimer(ctx context.Context, id uint) (*vo.Timer, error)
 	return vo.NewTimer(pTimer)
 }
 
-func (t *TimerService) EnableTimer(ctx context.Context, id uint) error {
+func (t *TimerService) EnableTimer(ctx context.Context, app string, id uint) error {
 	// 限制激活和去激活频次
-	lock := t.lockService.GetDistributionLock(utils.GetEnableLockKey(id))
+	lock := t.lockService.GetDistributionLock(utils.GetEnableLockKey(app))
 	if err := lock.Lock(ctx, defaultEnableGapSeconds); err != nil {
 		return errors.New("激活/去激活操作过于频繁，请稍后再试！")
 	}
@@ -120,9 +128,9 @@ func (t *TimerService) EnableTimer(ctx context.Context, id uint) error {
 	return t.dao.DoWithLock(ctx, id, do)
 }
 
-func (t *TimerService) UnableTimer(ctx context.Context, id uint) error {
+func (t *TimerService) UnableTimer(ctx context.Context, app string, id uint) error {
 	// 限制激活和去激活频次
-	lock := t.lockService.GetDistributionLock(utils.GetEnableLockKey(id))
+	lock := t.lockService.GetDistributionLock(utils.GetEnableLockKey(app))
 	if err := lock.Lock(ctx, defaultEnableGapSeconds); err != nil {
 		return errors.New("激活/去激活操作过于频繁，请稍后再试！")
 	}

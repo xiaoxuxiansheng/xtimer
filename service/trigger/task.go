@@ -27,7 +27,7 @@ func NewTaskService(dao *dao.TaskDAO, cache *dao.TaskCache, confPrivder *conf.Sc
 
 func (t *TaskService) GetTasksByTime(ctx context.Context, key string, bucket int, start, end time.Time) ([]*vo.Task, error) {
 	// 先走缓存
-	if tasks, err := t.cache.GetTasksByTime(ctx, key, start.Unix(), end.Unix()); err == nil && len(tasks) > 0 {
+	if tasks, err := t.cache.GetTasksByTime(ctx, key, start.UnixMilli(), end.UnixMilli()); err == nil && len(tasks) > 0 {
 		return vo.NewTasks(tasks), nil
 	}
 
