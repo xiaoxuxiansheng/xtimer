@@ -13,14 +13,20 @@ type GetAppTimersReq struct {
 	PageLimiter
 }
 
-type GetAppTimersResp struct {
+type GetTimersByNameReq struct {
+	App       string `form:"app" binding:"required"`
+	FuzzyName string `form:"fuzzyName" binding:"required"`
+	PageLimiter
+}
+
+type GetTimersResp struct {
 	CodeMsg
 	Data  []*Timer `json:"data"`
 	Total int64    `json:"total"`
 }
 
-func NewGetAppTimersResp(timers []*Timer, total int64, codeMsg CodeMsg) *GetAppTimersResp {
-	return &GetAppTimersResp{
+func NewGetTimersResp(timers []*Timer, total int64, codeMsg CodeMsg) *GetTimersResp {
+	return &GetTimersResp{
 		Data:    timers,
 		Total:   total,
 		CodeMsg: codeMsg,

@@ -173,6 +173,30 @@ func (t *TimerService) GetAppTimers(ctx context.Context, req *vo.GetAppTimersReq
 	return vTimers, total, err
 }
 
+func (t *TimerService) GetTimersByName(ctx context.Context, req *vo.GetTimersByNameReq) ([]*vo.Timer, int64, error) {
+	total, err := t.dao.Count(ctx, timerdao.WithApp(req.App), timerdao.WithFuzzyName(req.FuzzyName))
+	if err != nil {
+		return nil, -1, err
+	}
+
+	offset, limit := req.Get()
+	if total <= int64(offset) {
+		return []*vo.Timer{}, total, nil
+	}
+
+	timers, err := t.dao.GetTimers(ctx, timerdao.WithApp(req.App), timerdao.WithPageLimit(offset, limit), timerdao.WithFuzzyName(req.FuzzyName))
+	if err != nil {
+		return nil, -1, err
+	}
+
+	sort.Slice(timers, func(i, j int) bool {
+		return timers[i].ID > timers[j].ID
+	})
+
+	vTimers, err := vo.NewTimers(timers)
+	return vTimers, total, err
+}
+
 type timerDAO interface {
 	CreateTimer(ctx context.Context, timer *po.Timer) (uint, error)
 	DeleteTimer(ctx context.Context, id uint) error

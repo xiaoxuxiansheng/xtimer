@@ -60,7 +60,18 @@ func (t *TimerApp) GetAppTimers(c *gin.Context) {
 	}
 
 	timers, total, err := t.service.GetAppTimers(c.Request.Context(), &req)
-	c.JSON(http.StatusOK, vo.NewGetAppTimersResp(timers, total, vo.NewCodeMsgWithErr(err)))
+	c.JSON(http.StatusOK, vo.NewGetTimersResp(timers, total, vo.NewCodeMsgWithErr(err)))
+}
+
+func (t *TimerApp) GetTimersByName(c *gin.Context) {
+	var req vo.GetTimersByNameReq
+	if err := c.Bind(&req); err != nil {
+		c.JSON(http.StatusBadRequest, vo.NewCodeMsg(-1, fmt.Sprintf("[get timers by name] bind req failed, err: %v", err)))
+		return
+	}
+
+	timers, total, err := t.service.GetTimersByName(c.Request.Context(), &req)
+	c.JSON(http.StatusOK, vo.NewGetTimersResp(timers, total, vo.NewCodeMsgWithErr(err)))
 }
 
 func (t *TimerApp) DeleteTimer(c *gin.Context) {
@@ -138,4 +149,5 @@ type timerService interface {
 	EnableTimer(ctx context.Context, app string, id uint) error
 	UnableTimer(ctx context.Context, app string, id uint) error
 	GetAppTimers(ctx context.Context, req *vo.GetAppTimersReq) ([]*vo.Timer, int64, error)
+	GetTimersByName(ctx context.Context, req *vo.GetTimersByNameReq) ([]*vo.Timer, int64, error)
 }

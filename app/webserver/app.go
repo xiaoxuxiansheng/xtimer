@@ -71,6 +71,7 @@ func (s *Server) RegisterTimerRouter() {
 	s.timerRouter.PATCH("/def", s.timerApp.UpdateTimer)
 
 	s.timerRouter.GET("/defs", s.timerApp.GetAppTimers)
+	s.timerRouter.GET("/defsByName", s.timerApp.GetTimersByName)
 
 	s.timerRouter.POST("/enable", s.timerApp.EnableTimer)
 	s.timerRouter.POST("/unable", s.timerApp.UnableTimer)

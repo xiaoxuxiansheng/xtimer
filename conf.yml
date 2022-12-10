@@ -2,7 +2,7 @@
 #   workersNum: 100
 #   bucketsNum: 20
 #   tryLockSeconds: 70
-#   tryLockGapSeconds: 5
+#   tryLockGapMilliSeconds: 100
 #   successExpireSeconds: 130
 # trigger:
 #   zrangeGapSeconds: 1
@@ -17,7 +17,9 @@
 #   timerDetailCacheMinutes: 2
 mysql:
   ### 必填
-  dsn: root:19951212@tcp(43.138.61.23:3306)/ftimer?charset=utf8&parseTime=True&loc=Local
+  dsn:  请输入 mysql dsn
+  # maxOpenConns: 100
+  # maxIdleConns: 50
 # pool:
 #   size: 500000
 #   expireSeconds: 30
@@ -26,9 +28,9 @@ mysql:
 redis:
   # network: tcp 
   ## 必填
-  address: 43.138.61.23:6379
-  password: 19951212
-  # maxIdle: 10
+  address: 请输入 redis 地址
+  password: 请输入 redis 密码
+  # maxIdle: 2000
   # idleTimeout: 10
   # maxActive: 5000
   # wait: true
