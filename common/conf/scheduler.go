@@ -4,10 +4,10 @@ type SchedulerAppConf struct {
 	SchedulersNum int `yaml:"schedulersNum"`
 	WorkersNum    int `yaml:"workersNum"`
 	// 在默认桶数的基础上，每多 200 个任务增加一个桶数
-	BucketsNum           int `yaml:"bucketsNum"`
-	TryLockSeconds       int `yaml:"tryLockSeconds"`
-	TryLockGapSeconds    int `yaml:"tryLockGapSeconds"`
-	SuccessExpireSeconds int `yaml:"successExpireSeconds"`
+	BucketsNum             int `yaml:"bucketsNum"`
+	TryLockSeconds         int `yaml:"tryLockSeconds"`
+	TryLockGapMilliSeconds int `yaml:"tryLockGapMilliSeconds"`
+	SuccessExpireSeconds   int `yaml:"successExpireSeconds"`
 }
 
 var defaultSchedulerAppConfProvider *SchedulerAppConfProvider

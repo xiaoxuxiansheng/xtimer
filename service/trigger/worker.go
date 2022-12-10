@@ -128,7 +128,7 @@ func (w *Worker) handleBatch(ctx context.Context, key string, start, end time.Ti
 	for _, task := range tasks {
 		timerIDs = append(timerIDs, task.TimerID)
 	}
-	log.InfoContextf(ctx, "key: %s, get tasks: %+v, start: %v, end: %v", key, timerIDs, start, end)
+	// log.InfoContextf(ctx, "key: %s, get tasks: %+v, start: %v, end: %v", key, timerIDs, start, end)
 	for _, task := range tasks {
 		task := task
 		if err := w.pool.Submit(func() {

@@ -35,7 +35,7 @@ func NewWorker(trigger *trigger.Worker, redisClient *redis.Client, appConfProvid
 func (w *Worker) Start(ctx context.Context) error {
 	w.trigger.Start(ctx)
 
-	ticker := time.NewTicker(time.Duration(w.appConfProvider.Get().TryLockGapSeconds) * time.Second)
+	ticker := time.NewTicker(time.Duration(w.appConfProvider.Get().TryLockGapMilliSeconds) * time.Millisecond)
 	defer ticker.Stop()
 
 	for range ticker.C {
