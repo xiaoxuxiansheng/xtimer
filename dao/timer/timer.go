@@ -67,10 +67,7 @@ func (t *TimerDAO) Transaction(ctx context.Context, do func(ctx context.Context,
 				log.ErrorContextf(ctx, "transaction err: %v", err)
 			}
 		}()
-		if err := do(ctx, NewTimerDAO(mysql.NewClient(tx))); err != nil {
-			return err
-		}
-		return tx.Commit().Error
+		return do(ctx, NewTimerDAO(mysql.NewClient(tx)))
 	})
 }
 

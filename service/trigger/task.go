@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/xiaoxuxiansheng/xtimer/common/conf"
 	"github.com/xiaoxuxiansheng/xtimer/common/consts"
 	"github.com/xiaoxuxiansheng/xtimer/common/model/po"
 	"github.com/xiaoxuxiansheng/xtimer/common/model/vo"
@@ -11,20 +12,22 @@ import (
 )
 
 type TaskService struct {
-	cache *dao.TaskCache
-	dao   taskDAO
+	confPrivder *conf.SchedulerAppConfProvider
+	cache       *dao.TaskCache
+	dao         taskDAO
 }
 
-func NewTaskService(dao *dao.TaskDAO, cache *dao.TaskCache) *TaskService {
+func NewTaskService(dao *dao.TaskDAO, cache *dao.TaskCache, confPrivder *conf.SchedulerAppConfProvider) *TaskService {
 	return &TaskService{
-		dao:   dao,
-		cache: cache,
+		confPrivder: confPrivder,
+		dao:         dao,
+		cache:       cache,
 	}
 }
 
-func (t *TaskService) GetTasksByTime(ctx context.Context, key string, start, end time.Time) ([]*vo.Task, error) {
+func (t *TaskService) GetTasksByTime(ctx context.Context, key string, bucket int, start, end time.Time) ([]*vo.Task, error) {
 	// 先走缓存
-	if tasks, err := t.cache.GetTasksByTime(ctx, key, start.Unix(), end.Unix()); err == nil {
+	if tasks, err := t.cache.GetTasksByTime(ctx, key, start.Unix(), end.Unix()); err == nil && len(tasks) > 0 {
 		return vo.NewTasks(tasks), nil
 	}
 
@@ -33,7 +36,17 @@ func (t *TaskService) GetTasksByTime(ctx context.Context, key string, start, end
 	if err != nil {
 		return nil, err
 	}
-	return vo.NewTasks(tasks), nil
+
+	maxBucket := t.confPrivder.Get().BucketsNum
+	var validTask []*po.Task
+	for _, task := range tasks {
+		if task.TimerID%uint(maxBucket) != uint(bucket) {
+			continue
+		}
+		validTask = append(validTask, task)
+	}
+
+	return vo.NewTasks(validTask), nil
 }
 
 type taskDAO interface {

@@ -31,6 +31,7 @@ func NewFilter(client *redis.Client, encryptor1 *hash.SHA1Encryptor, encryptor2 
 func (f *Filter) Exist(ctx context.Context, key, val string) (bool, error) {
 	// 判断在布隆过滤器中是否存在
 	rawVal1 := f.encryptor1.Encrypt(val)
+	// log.InfoContextf(ctx, "[bloom exist check] key: %s, val: %s, rawVal1: %d", key, val, rawVal1)
 	if exist, err := f.client.GetBit(ctx, key, int32(rawVal1%math.MaxInt32)); err != nil || exist {
 		return exist, err
 	}
@@ -45,6 +46,7 @@ func (f *Filter) Set(ctx context.Context, key, val string, expireSeconds int64) 
 
 	// 算出两个 hash 函数对应的 offset，分别进行 set 动作
 	rawVal1, rawVal2 := f.encryptor1.Encrypt(val), f.encryptor2.Encrypt(val)
+	// log.InfoContextf(ctx, "[bloom set check] key: %s, val: %s, rawVal1: %d, rawVal2: %d", key, val, rawVal1, rawVal2)
 	_, err := f.client.Transaction(ctx, redis.NewSetBitCommand(key, int32(rawVal1%math.MaxInt32), 1),
 		redis.NewSetBitCommand(key, int32(rawVal2%math.MaxInt32), 1))
 

@@ -3,6 +3,7 @@ package trigger
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -113,13 +114,21 @@ func (w *Worker) Work(ctx context.Context, minuteBucketKey string, ack func()) e
 }
 
 func (w *Worker) handleBatch(ctx context.Context, key string, start, end time.Time) error {
-	tasks, err := w.task.GetTasksByTime(ctx, key, start, end)
+	bucket, err := getBucket(key)
 	if err != nil {
 		return err
 	}
 
-	// log.InfoContextf(ctx, "get tasks: %+v", tasks)
+	tasks, err := w.task.GetTasksByTime(ctx, key, bucket, start, end)
+	if err != nil {
+		return err
+	}
 
+	timerIDs := make([]uint, 0, len(tasks))
+	for _, task := range tasks {
+		timerIDs = append(timerIDs, task.TimerID)
+	}
+	log.InfoContextf(ctx, "key: %s, get tasks: %+v, start: %v, end: %v", key, timerIDs, start, end)
 	for _, task := range tasks {
 		task := task
 		if err := w.pool.Submit(func() {
@@ -146,8 +155,16 @@ func getStartMinute(slice string) (time.Time, error) {
 	return utils.GetStartMinute(timeBucket[0])
 }
 
+func getBucket(slice string) (int, error) {
+	timeBucket := strings.Split(slice, "_")
+	if len(timeBucket) != 2 {
+		return -1, fmt.Errorf("invalid format of msg key: %s", slice)
+	}
+	return strconv.Atoi(timeBucket[1])
+}
+
 type taskService interface {
-	GetTasksByTime(ctx context.Context, key string, start, end time.Time) ([]*vo.Task, error)
+	GetTasksByTime(ctx context.Context, key string, bucket int, start, end time.Time) ([]*vo.Task, error)
 }
 
 type confProvider interface {
