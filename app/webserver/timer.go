@@ -138,7 +138,11 @@ func (t *TimerApp) UnableTimer(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, vo.NewCodeMsgWithErr(t.service.UnableTimer(c.Request.Context(), req.App, req.ID)))
+	if err := t.service.UnableTimer(c.Request.Context(), req.App, req.ID); err != nil {
+		c.JSON(http.StatusOK, vo.NewCodeMsg(-1, err.Error()))
+		return
+	}
+	c.JSON(http.StatusOK, vo.NewCodeMsgWithErr(nil))
 }
 
 type timerService interface {
