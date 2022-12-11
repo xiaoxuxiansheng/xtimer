@@ -60,7 +60,11 @@ func (t *TimerApp) GetAppTimers(c *gin.Context) {
 	}
 
 	timers, total, err := t.service.GetAppTimers(c.Request.Context(), &req)
-	c.JSON(http.StatusOK, vo.NewGetTimersResp(timers, total, vo.NewCodeMsgWithErr(err)))
+	if err != nil {
+		c.JSON(http.StatusOK, vo.NewCodeMsg(-1, err.Error()))
+		return
+	}
+	c.JSON(http.StatusOK, vo.NewGetTimersResp(timers, total, vo.NewCodeMsgWithErr(nil)))
 }
 
 func (t *TimerApp) GetTimersByName(c *gin.Context) {
@@ -71,7 +75,11 @@ func (t *TimerApp) GetTimersByName(c *gin.Context) {
 	}
 
 	timers, total, err := t.service.GetTimersByName(c.Request.Context(), &req)
-	c.JSON(http.StatusOK, vo.NewGetTimersResp(timers, total, vo.NewCodeMsgWithErr(err)))
+	if err != nil {
+		c.JSON(http.StatusOK, vo.NewCodeMsg(-1, err.Error()))
+		return
+	}
+	c.JSON(http.StatusOK, vo.NewGetTimersResp(timers, total, vo.NewCodeMsgWithErr(nil)))
 }
 
 func (t *TimerApp) DeleteTimer(c *gin.Context) {
@@ -81,7 +89,11 @@ func (t *TimerApp) DeleteTimer(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, vo.NewCodeMsgWithErr(t.service.DeleteTimer(c.Request.Context(), req.App, req.ID)))
+	if err := t.service.DeleteTimer(c.Request.Context(), req.App, req.ID); err != nil {
+		c.JSON(http.StatusOK, vo.NewCodeMsg(-1, err.Error()))
+		return
+	}
+	c.JSON(http.StatusOK, vo.NewCodeMsgWithErr(nil))
 }
 
 func (t *TimerApp) UpdateTimer(c *gin.Context) {
@@ -96,7 +108,11 @@ func (t *TimerApp) GetTimer(c *gin.Context) {
 	}
 
 	timer, err := t.service.GetTimer(c.Request.Context(), req.ID)
-	c.JSON(http.StatusOK, vo.NewGetTimerResp(timer, vo.NewCodeMsgWithErr(err)))
+	if err != nil {
+		c.JSON(http.StatusOK, vo.NewCodeMsg(-1, err.Error()))
+		return
+	}
+	c.JSON(http.StatusOK, vo.NewGetTimerResp(timer, vo.NewCodeMsgWithErr(nil)))
 }
 
 // EnableTimer 激活定时器
